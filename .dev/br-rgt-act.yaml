@@ -1,0 +1,43 @@
+bridges:
+  vpnham-dev-rgt:
+    role: active
+
+    bridge_interface: eth0
+    peer_cidr: 10.0.0.0/16
+
+    status_addr: 10.1.0.2:8080
+    partner_status_url: http://10.1.0.3:8080/
+
+    probe_interval: 1s
+    probe_location: right/active
+
+    tunnel_interfaces:
+      eth1:
+        role: active
+        addr: 192.168.255.3:3003
+        probe_addr: 192.168.255.2:3003
+        threshold_down: 3
+        threshold_up: 5
+
+      eth2:
+        role: standby
+        addr: 192.168.255.35:3003
+        probe_addr: 192.168.255.34:3003
+        threshold_down: 5
+        threshold_up: 7
+
+    scripts_timeout: 5s
+
+metrics:
+  listen_addr: 0.0.0.0:8010
+
+default_scripts:
+  bridge_activate:
+    - ["sh", "-c", "echo ${bridge_interface} ${bridge_interface_ip} ${bridge_peer_cidr}"]
+    - ["sleep", "15"]
+
+  interface_activate:
+    - ["sh", "-c", "echo 'activate ${tunnel_interface} ${tunnel_interface_ip}'"]
+
+  interface_deactivate:
+    - ["sh", "-c", "echo 'deactivate ${tunnel_interface} ${tunnel_interface_ip}'"]

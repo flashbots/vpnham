@@ -1,0 +1,113 @@
+name: vpnham_dev
+
+networks:
+  net0:
+    ipam:
+      config:
+        - subnet: 10.0.0.0/16
+
+  net1:
+    ipam:
+      config:
+        - subnet: 10.1.0.0/16
+
+  wg00:
+    ipam:
+      config:
+        - subnet: 192.168.255.0/28
+
+  wg01:
+    ipam:
+      config:
+        - subnet: 192.168.255.16/28
+
+  wg10:
+    ipam:
+      config:
+        - subnet: 192.168.255.32/28
+
+  wg11:
+    ipam:
+      config:
+        - subnet: 192.168.255.48/28
+
+services:
+  br-lft-act:
+    build: .
+    container_name: br-lft-act
+    environment:
+      VPNHAM_LOG_LEVEL: ${VPNHAM_LOG_LEVEL}
+      VPNHAM_LOG_MODE: dev
+    ports:
+      - 8000:8000
+    volumes:
+      - type: bind
+        source: ./.dev/br-lft-act.yaml
+        target: /app/.vpnham.yaml
+    networks:
+      net0:
+        ipv4_address: 10.0.0.2
+      wg00:
+        ipv4_address: 192.168.255.2  # left/active <-> right/active
+      wg01:
+        ipv4_address: 192.168.255.18 # left/active <-> right/standby
+
+  br-lft-sby:
+    build: .
+    container_name: br-lft-sby
+    environment:
+      VPNHAM_LOG_LEVEL: ${VPNHAM_LOG_LEVEL}
+      VPNHAM_LOG_MODE: dev
+    volumes:
+      - type: bind
+        source: ./.dev/br-lft-sby.yaml
+        target: /app/.vpnham.yaml
+    ports:
+      - 8001:8001
+    networks:
+      net0:
+        ipv4_address: 10.0.0.3
+      wg11:
+        ipv4_address: 192.168.255.50 # left/standby <-> right/standby
+      wg10:
+        ipv4_address: 192.168.255.34 # left/standby <-> right/active
+
+  br-rgt-act:
+    build: .
+    container_name: br-rgt-act
+    environment:
+      VPNHAM_LOG_LEVEL: ${VPNHAM_LOG_LEVEL}
+      VPNHAM_LOG_MODE: dev
+    ports:
+      - 8010:8010
+    volumes:
+      - type: bind
+        source: ./.dev/br-rgt-act.yaml
+        target: /app/.vpnham.yaml
+    networks:
+      net1:
+        ipv4_address: 10.1.0.2
+      wg00:
+        ipv4_address: 192.168.255.3  # right/active <-> left/active
+      wg10:
+        ipv4_address: 192.168.255.35 # right/active <-> left/standby
+
+  br-rgt-sby:
+    build: .
+    container_name: br-rgt-sby
+    environment:
+      VPNHAM_LOG_LEVEL: ${VPNHAM_LOG_LEVEL}
+      VPNHAM_LOG_MODE: dev
+    ports:
+      - 8011:8011
+    volumes:
+      - type: bind
+        source: ./.dev/br-rgt-sby.yaml
+        target: /app/.vpnham.yaml
+    networks:
+      net1:
+        ipv4_address: 10.1.0.3
+      wg11:
+        ipv4_address: 192.168.255.51 # right/standby <-> left/standby
+      wg01:
+        ipv4_address: 192.168.255.19 # right/standby <-> left/active

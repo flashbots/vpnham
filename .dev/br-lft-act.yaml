@@ -1,0 +1,43 @@
+bridges:
+  vpnham-dev-lft:
+    role: active
+
+    bridge_interface: eth0
+    peer_cidr: 10.1.0.0/16
+
+    status_addr: 10.0.0.2:8080
+    partner_status_url: http://10.0.0.3:8080/
+
+    probe_interval: 1s
+    probe_location: left/active
+
+    tunnel_interfaces:
+      eth1:
+        role: active
+        addr: 192.168.255.2:3003
+        probe_addr: 192.168.255.3:3003
+        threshold_down: 5
+        threshold_up: 3
+      eth2:
+        role: standby
+        addr: 192.168.255.18:3003
+        probe_addr: 192.168.255.19:3003
+        threshold_down: 7
+        threshold_up: 5
+
+    scripts_timeout: 5s
+
+metrics:
+  listen_addr: 0.0.0.0:8000
+
+default_scripts:
+  bridge_activate:
+    - ["sh", "-c", "echo ${bridge_interface} ${bridge_interface_ip} ${bridge_peer_cidr}"]
+    - ["sleep", "15"]
+    - ["sh", "-c", "exit 1"]
+
+  interface_activate:
+    - ["sh", "-c", "echo 'activate ${tunnel_interface} ${tunnel_interface_ip}'"]
+
+  interface_deactivate:
+    - ["sh", "-c", "echo 'deactivate ${tunnel_interface} ${tunnel_interface_ip}'"]
