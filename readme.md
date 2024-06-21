@@ -36,7 +36,7 @@ Typical setup would be:
 In the event of the downtime (tunnel is broken, one of active hosts is down),
 the monitor would:
 
-- Promote one remaining tunnels to become `active`.
+- Promote the remaining tunnel to become `active`.
 - Trigger custom command scripts to adjust for the situation (to re-configure
   the routes, for example).
 
@@ -138,8 +138,8 @@ bridges:
         addr: 192.168.255.2:3003        # address where we respond to UDP probes
         probe_addr: 192.168.255.3:3003  # address where we send the UDP probes to
 
-        threshold_down: 5  # count of failed probes/polls to consider peer/partner "down"
-        threshold_up: 3    # count of successful probes/polls for peer/partner to go "up"
+        threshold_down: 5  # count of failed probes/polls to mark peer/partner "down"
+        threshold_up: 3    # count of successful probes/polls to mark peer/partner "up"
 
       eth2:
         role: standby
@@ -154,7 +154,10 @@ metrics:
   listen_addr: 0.0.0.0:8000  # where we expose the metrics (at `/metrics` path)
 
   latency_buckets_count: 33  # count of histogram buckets for latency metrics
-  max_latency_us: 1000000    # max latency bucket in [us] (the others are computed exponentially downwards)
+
+  max_latency_us: 1000000  # max latency bucket in [us]; the buckets are computed
+                           # exponentially, so that
+                           # max_latency == pow(min_latency, buckets_count)
 
 default_scripts:    # default scripts (complement the `scripts` on bridge config)
   bridge_activate:  # script that we will run when bridge becomes `active`
