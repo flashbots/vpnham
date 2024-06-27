@@ -17,6 +17,10 @@ func (s *Server) sendProbes(ctx context.Context, _ chan<- error) {
 	l := logutils.LoggerFromContext(ctx)
 
 	for ifsName, peer := range s.peers {
+		l.Debug("Sending probe to a peer...",
+			zap.String("tunnel_interface", peer.InterfaceName()),
+		)
+
 		probe := &types.Probe{
 			Sequence:     peer.NextSequence(),
 			SrcUUID:      s.uuid,
@@ -30,8 +34,8 @@ func (s *Server) sendProbes(ctx context.Context, _ chan<- error) {
 				l.Warn("Failed to send a probe",
 					zap.Error(err),
 					zap.String("bridge_name", s.cfg.Name),
-					zap.String("bridge_uuid", s.uuid.String()),
 					zap.String("tunnel_interface", peer.InterfaceName()),
+					zap.Uint64("sequence", probe.Sequence),
 				)
 				s.events <- &event.TunnelProbeSendFailure{ // emit event
 					TunnelInterface: ifsName,
@@ -41,6 +45,11 @@ func (s *Server) sendProbes(ctx context.Context, _ chan<- error) {
 				return
 			}
 
+			l.Debug("Sent a probe",
+				zap.String("bridge_name", s.cfg.Name),
+				zap.String("tunnel_interface", peer.InterfaceName()),
+				zap.Uint64("sequence", probe.Sequence),
+			)
 			s.events <- &event.TunnelProbeSendSuccess{ // emit event
 				TunnelInterface: ifsName,
 				ProbeSequence:   probe.Sequence,
@@ -50,10 +59,17 @@ func (s *Server) sendProbes(ctx context.Context, _ chan<- error) {
 	}
 }
 
-func (s *Server) detectMissedProbes(_ context.Context, _ chan<- error) {
+func (s *Server) detectMissedProbes(ctx context.Context, _ chan<- error) {
+	l := logutils.LoggerFromContext(ctx)
+
 	for ifsName, peer := range s.peers {
 		for missed := peer.Acknowledgement() + 1; missed < peer.Sequence(); missed++ {
-			s.events <- &event.TunnelProbeReturnFailure{
+			l.Debug("Missed a probe (gap in acknowledgement)",
+				zap.String("bridge_name", s.cfg.Name),
+				zap.String("tunnel_interface", peer.InterfaceName()),
+				zap.Uint64("sequence", missed),
+			)
+			s.events <- &event.TunnelProbeReturnFailure{ // emit event
 				TunnelInterface: ifsName,
 				Timestamp:       time.Now(),
 				ProbeSequence:   missed,
@@ -72,18 +88,24 @@ func (s *Server) respondToProbe(
 	l := logutils.LoggerFromContext(ctx)
 
 	probe.DstLocation = s.cfg.ProbeLocation
+	probe.DstUUID = s.cfg.UUID
 	probe.DstTimestamp = time.Now()
 
 	tp.SendProbe(probe, from, func(err error) {
-		if err != nil {
+		if err == nil {
+			l.Debug("Responded to probe",
+				zap.String("bridge_name", s.cfg.Name),
+				zap.String("dst_uuid", probe.DstUUID.String()),
+				zap.String("tunnel_interface", tp.InterfaceName()),
+				zap.Time("dst_timestamp", probe.DstTimestamp),
+				zap.Uint64("sequence", probe.Sequence),
+			)
+		} else {
 			l.Warn("Failed to respond to incoming probe",
 				zap.Error(err),
 				zap.String("bridge_name", s.cfg.Name),
-				zap.String("bridge_uuid", s.uuid.String()),
-				zap.String("probe_src_addr", from.String()),
-				zap.String("probe_src_location", probe.SrcLocation.String()),
-				zap.String("probe_src_uuid", probe.SrcUUID.String()),
 				zap.String("tunnel_interface", tp.InterfaceName()),
+				zap.Uint64("sequence", probe.Sequence),
 			)
 		}
 	})
@@ -99,12 +121,17 @@ func (s *Server) processReturnedProbe(
 
 	l := logutils.LoggerFromContext(ctx)
 
+	l.Debug("Processing returned probe...",
+		zap.String("bridge_name", s.cfg.Name),
+		zap.String("tunnel_interface", tp.InterfaceName()),
+		zap.Uint64("sequence", probe.Sequence),
+	)
+
 	peer := s.peers[tp.InterfaceName()]
 	// check for errors
 	if probe.DstUUID != peer.UUID() {
 		l.Warn("Invalid return probe",
 			zap.String("bridge_name", s.cfg.Name),
-			zap.String("bridge_uuid", s.uuid.String()),
 			zap.String("tunnel_interface", tp.InterfaceName()),
 
 			zap.Error(fmt.Errorf("%w: expected %s, got %s",
@@ -115,7 +142,12 @@ func (s *Server) processReturnedProbe(
 	}
 	// detect missed probes
 	for missed := peer.Acknowledgement() + 1; missed < probe.Sequence; missed++ {
-		s.events <- &event.TunnelProbeReturnFailure{
+		l.Debug("Missed a probe (later probe came in)",
+			zap.String("bridge_name", s.cfg.Name),
+			zap.String("tunnel_interface", peer.InterfaceName()),
+			zap.Uint64("sequence", missed),
+		)
+		s.events <- &event.TunnelProbeReturnFailure{ // emit event
 			TunnelInterface: tp.InterfaceName(),
 			ProbeSequence:   missed,
 			Timestamp:       ts,
@@ -142,7 +174,6 @@ func (s *Server) processMismatchedReturnedProbes(
 
 	l.Warn("Invalid probe",
 		zap.String("bridge_name", s.cfg.Name),
-		zap.String("bridge_uuid", s.uuid.String()),
 		zap.String("tunnel_interface", tp.InterfaceName()),
 
 		zap.Error(fmt.Errorf("%w: expected %s, got %s",

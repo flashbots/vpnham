@@ -39,7 +39,6 @@ func (s *Server) pollPartnerBridge(ctx context.Context, _ chan<- error) {
 		l.Debug("Failed to query partner bridge status",
 			zap.Error(err),
 			zap.String("bridge_name", s.cfg.Name),
-			zap.String("bridge_uuid", s.uuid.String()),
 		)
 		s.events <- &event.PartnerPollFailure{ // emit event
 			Sequence:  sequence,
@@ -54,7 +53,6 @@ func (s *Server) pollPartnerBridge(ctx context.Context, _ chan<- error) {
 		l.Warn("Failed to read partner bridge status",
 			zap.Error(err),
 			zap.String("bridge_name", s.cfg.Name),
-			zap.String("bridge_uuid", s.uuid.String()),
 		)
 		s.events <- &event.PartnerPollFailure{ // emit event
 			Sequence:  sequence,
@@ -68,7 +66,6 @@ func (s *Server) pollPartnerBridge(ctx context.Context, _ chan<- error) {
 		l.Warn("Failed to parse partner bridge status",
 			zap.Error(err),
 			zap.String("bridge_name", s.cfg.Name),
-			zap.String("bridge_uuid", s.uuid.String()),
 		)
 		s.events <- &event.PartnerPollFailure{ // emit event
 			Sequence:  sequence,

@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/flashbots/vpnham/logutils"
 	"github.com/flashbots/vpnham/types"
@@ -46,7 +47,9 @@ func (ex *Executor) execute(ctx context.Context, job job) {
 		ctx, cancel := context.WithTimeout(ctx, ex.timeout)
 		defer cancel()
 
+		start := time.Now()
 		cmd := exec.CommandContext(ctx, _cmd[0], _cmd[1:]...)
+		duration := time.Since(start)
 
 		stdout := &strings.Builder{}
 		stderr := &strings.Builder{}
@@ -61,12 +64,15 @@ func (ex *Executor) execute(ctx context.Context, job job) {
 		}
 
 		l.Info("Executed command",
-			zap.Error(err),
+			zap.String("script", job.name),
 			zap.Int("step", step),
 			zap.String("command", strCmd),
-			zap.String("script", job.name),
+			zap.Duration("duration", duration),
+
 			zap.String("stderr", strings.TrimSpace(stderr.String())),
 			zap.String("stdout", strings.TrimSpace(stdout.String())),
+
+			zap.Error(err),
 		)
 	}
 }

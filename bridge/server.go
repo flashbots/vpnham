@@ -163,14 +163,12 @@ func (s *Server) Run(ctx context.Context, failureSink chan<- error) {
 		l.Info("VPN HA-monitor bridge server is going up...",
 			zap.String("bridge_listen_address", s.server.Addr),
 			zap.String("bridge_name", s.cfg.Name),
-			zap.String("bridge_uuid", s.uuid.String()),
 		)
 		if err := s.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			failureSink <- err
 		}
 		l.Info("VPN HA-monitor bridge server is down",
 			zap.String("bridge_name", s.cfg.Name),
-			zap.String("bridge_uuid", s.uuid.String()),
 		)
 	}()
 
@@ -200,7 +198,6 @@ func (s *Server) Stop(ctx context.Context) {
 		l.Error("VPN HA-monitor bridge server shutdown failed",
 			zap.Error(err),
 			zap.String("bridge_name", s.cfg.Name),
-			zap.String("bridge_uuid", s.uuid.String()),
 		)
 	}
 }

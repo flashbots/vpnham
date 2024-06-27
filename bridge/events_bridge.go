@@ -14,7 +14,6 @@ func (s *Server) eventBridgeWentDown(ctx context.Context, e *event.BridgeWentDow
 
 	l.Info("Bridge went down",
 		zap.String("bridge_name", s.cfg.Name),
-		zap.String("bridge_uuid", s.uuid.String()),
 	)
 
 	s.mxStatus.Lock()
@@ -43,7 +42,6 @@ func (s *Server) eventBridgeWentUp(ctx context.Context, e *event.BridgeWentUp, _
 
 	l.Info("Bridge went up",
 		zap.String("bridge_name", s.cfg.Name),
-		zap.String("bridge_uuid", s.uuid.String()),
 	)
 
 	s.mxStatus.Lock()
@@ -85,7 +83,6 @@ func (s *Server) eventBridgeDeactivated(ctx context.Context, _ *event.BridgeDeac
 
 	l.Info("Bridge deactivated",
 		zap.String("bridge_name", s.cfg.Name),
-		zap.String("bridge_uuid", s.uuid.String()),
 	)
 }
 
@@ -94,7 +91,6 @@ func (s *Server) eventBridgeActivated(ctx context.Context, e *event.BridgeActiva
 
 	l.Info("Bridge activated",
 		zap.String("bridge_name", s.cfg.Name),
-		zap.String("bridge_uuid", s.uuid.String()),
 	)
 
 	s.executor.ExecuteBridgeActivate(ctx, e)

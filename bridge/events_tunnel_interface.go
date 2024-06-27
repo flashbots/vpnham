@@ -14,7 +14,6 @@ func (s *Server) eventTunnelInterfaceWentDown(ctx context.Context, e *event.Tunn
 
 	l.Info("Tunnel interface went down",
 		zap.String("bridge_name", s.cfg.Name),
-		zap.String("bridge_uuid", s.uuid.String()),
 		zap.String("tunnel_interface", e.EvtTunnelInterface()),
 	)
 
@@ -65,7 +64,6 @@ func (s *Server) eventTunnelInterfaceWentUp(ctx context.Context, e *event.Tunnel
 
 	l.Info("Tunnel interface went up",
 		zap.String("bridge_name", s.cfg.Name),
-		zap.String("bridge_uuid", s.uuid.String()),
 		zap.String("tunnel_interface", e.EvtTunnelInterface()),
 	)
 
@@ -143,7 +141,6 @@ func (s *Server) eventTunnelInterfaceDeactivated(ctx context.Context, e *event.T
 
 	l.Info("Tunnel interface deactivated",
 		zap.String("bridge_name", s.cfg.Name),
-		zap.String("bridge_uuid", s.uuid.String()),
 		zap.String("tunnel_interface", e.EvtTunnelInterface()),
 	)
 
@@ -155,7 +152,6 @@ func (s *Server) eventTunnelInterfaceActivated(ctx context.Context, e *event.Tun
 
 	l.Info("Tunnel interface activated",
 		zap.String("bridge_name", s.cfg.Name),
-		zap.String("bridge_uuid", s.uuid.String()),
 		zap.String("tunnel_interface", e.EvtTunnelInterface()),
 	)
 

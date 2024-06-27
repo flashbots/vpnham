@@ -15,7 +15,6 @@ func (s *Server) ObserveMetrics(ctx context.Context, observer otelapi.Observer) 
 
 	l.Debug("Observing metrics",
 		zap.String("bridge_name", s.cfg.Name),
-		zap.String("bridge_uuid", s.uuid.String()),
 	)
 
 	s.mxStatus.Lock()

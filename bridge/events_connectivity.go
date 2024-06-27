@@ -13,7 +13,6 @@ func (s *Server) eventConnectivityLost(ctx context.Context, _ *event.Connectivit
 
 	l.Info("Connectivity lost",
 		zap.String("bridge_name", s.cfg.Name),
-		zap.String("bridge_uuid", s.uuid.String()),
 	)
 }
 
@@ -22,6 +21,5 @@ func (s *Server) eventConnectivityRestored(ctx context.Context, _ *event.Connect
 
 	l.Info("Connectivity restored",
 		zap.String("bridge_name", s.cfg.Name),
-		zap.String("bridge_uuid", s.uuid.String()),
 	)
 }

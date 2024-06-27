@@ -16,7 +16,6 @@ func (s *Server) runEventLoop(ctx context.Context, failureSink chan<- error) {
 	go func() {
 		l.Info("VPN HA-monitor bridge event loop is starting...",
 			zap.String("bridge_name", s.cfg.Name),
-			zap.String("bridge_uuid", s.uuid.String()),
 		)
 
 		for e := range s.events {
@@ -73,7 +72,6 @@ func (s *Server) runEventLoop(ctx context.Context, failureSink chan<- error) {
 
 		l.Info("VPN HA-monitor bridge event loop is stopped",
 			zap.String("bridge_name", s.cfg.Name),
-			zap.String("bridge_uuid", s.uuid.String()),
 		)
 	}()
 }

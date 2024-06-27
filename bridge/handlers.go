@@ -28,7 +28,6 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 		l.Warn("Failed to read request body",
 			zap.Error(err),
 			zap.String("bridge_name", s.cfg.Name),
-			zap.String("bridge_uuid", s.uuid.String()),
 		)
 	}
 
@@ -41,7 +40,6 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 		l.Warn("Failed to encode and send response body",
 			zap.Error(err),
 			zap.String("bridge_name", s.cfg.Name),
-			zap.String("bridge_uuid", s.uuid.String()),
 		)
 	}
 }
@@ -52,6 +50,16 @@ func (s *Server) handleProbe(
 	from *net.UDPAddr,
 	probe *types.Probe,
 ) {
+	l := logutils.LoggerFromContext(ctx)
+
+	l.Debug("Received probe",
+		zap.String("bridge_name", s.cfg.Name),
+		zap.String("src_uuid", probe.SrcUUID.String()),
+		zap.String("tunnel_interface", tp.InterfaceName()),
+		zap.Time("dst_timestamp", probe.DstTimestamp),
+		zap.Uint64("sequence", probe.Sequence),
+	)
+
 	switch {
 	// reply to the other side's probes
 	case probe.DstTimestamp.IsZero():
@@ -72,7 +80,6 @@ func (s *Server) handleTick(ctx context.Context, ts time.Time, failureSink chan<
 
 	l.Debug("Handling timer tick",
 		zap.String("bridge_name", s.cfg.Name),
-		zap.String("bridge_uuid", s.uuid.String()),
 		zap.Time("tick", ts),
 	)
 

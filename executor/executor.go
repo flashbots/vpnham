@@ -54,7 +54,6 @@ func (ex *Executor) Run(ctx context.Context, failureSink chan<- error) {
 
 	l.Info("VPN HA-monitor script-executor is going up...",
 		zap.String("bridge_name", ex.bridgeName),
-		zap.String("bridge_uuid", ex.bridgeUUID.String()),
 	)
 
 	go func() {
@@ -62,7 +61,6 @@ func (ex *Executor) Run(ctx context.Context, failureSink chan<- error) {
 
 		l.Info("VPN HA-monitor script-executor is down",
 			zap.String("bridge_name", ex.bridgeName),
-			zap.String("bridge_uuid", ex.bridgeUUID.String()),
 		)
 	}()
 }
@@ -92,7 +90,6 @@ func (ex *Executor) ExecuteBridgeActivate(ctx context.Context, e *event.BridgeAc
 			zap.Error(err),
 			zap.String("bridge_interface", e.BridgeInterface),
 			zap.String("bridge_name", ex.bridgeName),
-			zap.String("bridge_uuid", ex.bridgeUUID.String()),
 		)
 		return
 	}
@@ -124,7 +121,6 @@ func (ex *Executor) ExecuteInterfaceActivate(ctx context.Context, e *event.Tunne
 			zap.Error(err),
 			zap.String("bridge_interface", e.BridgeInterface),
 			zap.String("bridge_name", ex.bridgeName),
-			zap.String("bridge_uuid", ex.bridgeUUID.String()),
 		)
 		return
 	}
@@ -156,7 +152,6 @@ func (ex *Executor) ExecuteInterfaceDeactivate(ctx context.Context, e *event.Tun
 			zap.Error(err),
 			zap.String("bridge_interface", e.BridgeInterface),
 			zap.String("bridge_name", ex.bridgeName),
-			zap.String("bridge_uuid", ex.bridgeUUID.String()),
 		)
 		return
 	}

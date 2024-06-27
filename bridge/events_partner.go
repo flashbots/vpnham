@@ -58,7 +58,6 @@ func (s *Server) eventPartnerWentDown(ctx context.Context, e *event.PartnerWentD
 
 	l.Info("Partner went down",
 		zap.String("bridge_name", s.cfg.Name),
-		zap.String("bridge_uuid", s.uuid.String()),
 	)
 
 	s.mxStatus.Lock()
@@ -88,7 +87,6 @@ func (s *Server) eventPartnerWentUp(ctx context.Context, e *event.PartnerWentUp,
 
 	l.Info("Partner went up",
 		zap.String("bridge_name", s.cfg.Name),
-		zap.String("bridge_uuid", s.uuid.String()),
 	)
 
 	s.mxStatus.Lock()
@@ -107,7 +105,6 @@ func (s *Server) eventPartnerDeactivated(ctx context.Context, _ *event.PartnerDe
 
 	l.Info("Partner deactivated",
 		zap.String("bridge_name", s.cfg.Name),
-		zap.String("bridge_uuid", s.uuid.String()),
 	)
 }
 
@@ -116,7 +113,6 @@ func (s *Server) eventPartnerActivated(ctx context.Context, _ *event.PartnerActi
 
 	logFields := []zapcore.Field{
 		zap.String("bridge_name", s.cfg.Name),
-		zap.String("bridge_uuid", s.uuid.String()),
 	}
 	if s.partnerStatus != nil {
 		logFields = append(logFields, zap.String("partner_name", s.partnerStatus.Name))
