@@ -32,12 +32,10 @@ metrics:
 
 default_scripts:
   bridge_activate:
-    - ["sh", "-c", "echo ${bridge_interface} ${bridge_interface_ip} ${bridge_peer_cidr}"]
-    - ["sleep", "15"]
-    - ["sh", "-c", "exit 1"]
+    - ["sh", "-c", "echo ${proto} ${bridge_interface} ${bridge_interface_ip} ${bridge_peer_cidr}"]
 
   interface_activate:
-    - ["sh", "-c", "echo 'activate ${tunnel_interface} ${tunnel_interface_ip}'"]
+    - ["sh", "-c", "echo 'activate ${proto} ${tunnel_interface} ${tunnel_interface_ip}'"]
 
   interface_deactivate:
-    - ["sh", "-c", "echo 'deactivate ${tunnel_interface} ${tunnel_interface_ip}'"]
+    - ["sh", "-c", "echo 'deactivate ${proto} ${tunnel_interface} ${tunnel_interface_ip}'"]

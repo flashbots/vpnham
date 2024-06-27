@@ -34,17 +34,17 @@ func (s *Server) sendProbes(ctx context.Context, _ chan<- error) {
 					zap.String("tunnel_interface", peer.InterfaceName()),
 				)
 				s.events <- &event.TunnelProbeSendFailure{ // emit event
-					Interface: ifsName,
-					Sequence:  probe.Sequence,
-					Timestamp: probe.SrcTimestamp,
+					TunnelInterface: ifsName,
+					ProbeSequence:   probe.Sequence,
+					Timestamp:       probe.SrcTimestamp,
 				}
 				return
 			}
 
 			s.events <- &event.TunnelProbeSendSuccess{ // emit event
-				Interface: ifsName,
-				Sequence:  probe.Sequence,
-				Timestamp: probe.SrcTimestamp,
+				TunnelInterface: ifsName,
+				ProbeSequence:   probe.Sequence,
+				Timestamp:       probe.SrcTimestamp,
 			}
 		})
 	}
@@ -54,9 +54,9 @@ func (s *Server) detectMissedProbes(_ context.Context, _ chan<- error) {
 	for ifsName, peer := range s.peers {
 		for missed := peer.Acknowledgement() + 1; missed < peer.Sequence(); missed++ {
 			s.events <- &event.TunnelProbeReturnFailure{
-				Interface: ifsName,
-				Timestamp: time.Now(),
-				Sequence:  missed,
+				TunnelInterface: ifsName,
+				Timestamp:       time.Now(),
+				ProbeSequence:   missed,
 			}
 		}
 		peer.SetAcknowledgement(peer.Sequence() - 1)
@@ -116,19 +116,19 @@ func (s *Server) processReturnedProbe(
 	// detect missed probes
 	for missed := peer.Acknowledgement() + 1; missed < probe.Sequence; missed++ {
 		s.events <- &event.TunnelProbeReturnFailure{
-			Interface: tp.InterfaceName(),
-			Sequence:  missed,
-			Timestamp: ts,
+			TunnelInterface: tp.InterfaceName(),
+			ProbeSequence:   missed,
+			Timestamp:       ts,
 		}
 	}
 	peer.SetAcknowledgement(probe.Sequence)
 	s.events <- &event.TunnelProbeReturnSuccess{ // emit event
-		Interface:      tp.InterfaceName(),
-		LatencyForward: probe.DstTimestamp.Sub(probe.SrcTimestamp),
-		LatencyReturn:  ts.Sub(probe.DstTimestamp),
-		Location:       probe.DstLocation.String(),
-		Sequence:       probe.Sequence,
-		Timestamp:      ts,
+		TunnelInterface: tp.InterfaceName(),
+		LatencyForward:  probe.DstTimestamp.Sub(probe.SrcTimestamp),
+		LatencyReturn:   ts.Sub(probe.DstTimestamp),
+		Location:        probe.DstLocation.String(),
+		ProbeSequence:   probe.Sequence,
+		Timestamp:       ts,
 	}
 }
 

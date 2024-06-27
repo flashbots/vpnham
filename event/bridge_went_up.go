@@ -1,15 +1,29 @@
 package event
 
-import "time"
+import (
+	"time"
+
+	"github.com/flashbots/vpnham/types"
+)
 
 type BridgeWentUp struct {
-	Timestamp time.Time
+	BridgeInterface string
+	BridgePerCIDR   types.CIDR
+	Timestamp       time.Time
 }
 
-func (e *BridgeWentUp) EventKind() string {
+func (e *BridgeWentUp) EvtKind() string {
 	return "bridge_went_up"
 }
 
-func (e *BridgeWentUp) EventTimestamp() time.Time {
+func (e *BridgeWentUp) EvtBridgeInterface() string {
+	return e.BridgeInterface
+}
+
+func (e *BridgeWentUp) EvtBridgePeerCIDR() types.CIDR {
+	return e.BridgePerCIDR
+}
+
+func (e *BridgeWentUp) EvtTimestamp() time.Time {
 	return e.Timestamp
 }

@@ -6,10 +6,10 @@ type ConnectivityRestored struct {
 	Timestamp time.Time
 }
 
-func (e *ConnectivityRestored) EventKind() string {
+func (e *ConnectivityRestored) EvtKind() string {
 	return "connectivity_restored"
 }
 
-func (e *ConnectivityRestored) EventTimestamp() time.Time {
+func (e *ConnectivityRestored) EvtTimestamp() time.Time {
 	return e.Timestamp
 }

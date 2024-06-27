@@ -12,14 +12,14 @@ type PartnerPollSuccess struct {
 	Timestamp time.Time
 }
 
-func (e *PartnerPollSuccess) EventKind() string {
+func (e *PartnerPollSuccess) EvtKind() string {
 	return "partner_poll_success"
-}
-
-func (e *PartnerPollSuccess) EventTimestamp() time.Time {
-	return e.Timestamp
 }
 
 func (e *PartnerPollSuccess) PartnerStatus() *types.BridgeStatus {
 	return e.Status
+}
+
+func (e *PartnerPollSuccess) EvtTimestamp() time.Time {
+	return e.Timestamp
 }

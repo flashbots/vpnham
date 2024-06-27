@@ -3,19 +3,19 @@ package event
 import "time"
 
 type TunnelProbeSendSuccess struct {
-	Interface string
-	Sequence  uint64
-	Timestamp time.Time
+	ProbeSequence   uint64
+	TunnelInterface string
+	Timestamp       time.Time
 }
 
-func (e *TunnelProbeSendSuccess) EventKind() string {
+func (e *TunnelProbeSendSuccess) EvtKind() string {
 	return "tunnel_probe_send_success"
 }
 
-func (e *TunnelProbeSendSuccess) EventTimestamp() time.Time {
-	return e.Timestamp
+func (e *TunnelProbeSendSuccess) EvtTunnelInterface() string {
+	return e.TunnelInterface
 }
 
-func (e *TunnelProbeSendSuccess) TunnelInterface() string {
-	return e.Interface
+func (e *TunnelProbeSendSuccess) EvtTimestamp() time.Time {
+	return e.Timestamp
 }

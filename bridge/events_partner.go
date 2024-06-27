@@ -69,7 +69,7 @@ func (s *Server) eventPartnerWentDown(ctx context.Context, e *event.PartnerWentD
 	if s.partnerStatus.Active {
 		s.partnerStatus.Active = false
 		s.events <- &event.PartnerDeactivated{ // emit event
-			Timestamp: e.EventTimestamp(),
+			Timestamp: e.EvtTimestamp(),
 		}
 	}
 

@@ -25,7 +25,9 @@ func (s *Server) eventBridgeWentDown(ctx context.Context, e *event.BridgeWentDow
 	if s.status.Active {
 		s.status.Active = false
 		s.events <- &event.BridgeDeactivated{ // emit event
-			Timestamp: e.Timestamp,
+			BridgeInterface: s.cfg.BridgeInterface,
+			BridgePeerCIDR:  s.cfg.PeerCIDR,
+			Timestamp:       e.Timestamp,
 		}
 	}
 

@@ -6,10 +6,10 @@ type PartnerWentDown struct {
 	Timestamp time.Time
 }
 
-func (e *PartnerWentDown) EventKind() string {
+func (e *PartnerWentDown) EvtKind() string {
 	return "partner_went_down"
 }
 
-func (e *PartnerWentDown) EventTimestamp() time.Time {
+func (e *PartnerWentDown) EvtTimestamp() time.Time {
 	return e.Timestamp
 }

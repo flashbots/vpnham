@@ -6,10 +6,10 @@ type PartnerActivated struct {
 	Timestamp time.Time
 }
 
-func (e *PartnerActivated) EventKind() string {
+func (e *PartnerActivated) EvtKind() string {
 	return "partner_activated"
 }
 
-func (e *PartnerActivated) EventTimestamp() time.Time {
+func (e *PartnerActivated) EvtTimestamp() time.Time {
 	return e.Timestamp
 }

@@ -24,10 +24,10 @@ type Executor struct {
 
 	timeout time.Duration
 
-	queue   []*types.Script
+	queue   []job
 	mxQueue sync.Mutex
 
-	next chan *types.Script
+	next chan job
 	stop chan struct{}
 }
 
@@ -42,9 +42,9 @@ func New(cfg *config.Bridge) (*Executor, error) {
 
 		timeout: cfg.ScriptsTimeout,
 
-		queue: make([]*types.Script, 0, 1),
+		queue: make([]job, 0, 1),
 
-		next: make(chan *types.Script),
+		next: make(chan job),
 		stop: make(chan struct{}, 1),
 	}, nil
 }
@@ -80,15 +80,12 @@ func (ex *Executor) ExecuteBridgeActivate(ctx context.Context, e *event.BridgeAc
 	}
 
 	script, err := func() (*types.Script, error) {
-		bridgeInterfaceIP, err := utils.GetInterfaceIP(e.BridgeInterface, e.BridgePeerCIDR.IsIPv4())
+		placeholders, err := ex.renderPlaceholders(e)
 		if err != nil {
 			return nil, err
 		}
-		return ex.render(&ex.bridgeActivate, map[string]string{
-			placeholderBridgeInterface:   e.BridgeInterface,
-			placeholderBridgeInterfaceIP: bridgeInterfaceIP,
-			placeholderBridgePeerCIDR:    string(e.BridgePeerCIDR),
-		}), nil
+
+		return ex.render(&ex.bridgeActivate, placeholders), nil
 	}()
 	if err != nil {
 		l.Error("Failed to execute interface activation script",
@@ -100,7 +97,10 @@ func (ex *Executor) ExecuteBridgeActivate(ctx context.Context, e *event.BridgeAc
 		return
 	}
 
-	ex.schedule(script)
+	ex.schedule(job{
+		name:   "bridge_activate",
+		script: script,
+	})
 }
 
 func (ex *Executor) ExecuteInterfaceActivate(ctx context.Context, e *event.TunnelInterfaceActivated) {
@@ -112,21 +112,12 @@ func (ex *Executor) ExecuteInterfaceActivate(ctx context.Context, e *event.Tunne
 	}
 
 	script, err := func() (*types.Script, error) {
-		bridgeInterfaceIP, err := utils.GetInterfaceIP(e.BridgeInterface, e.BridgePeerCIDR.IsIPv4())
+		placeholders, err := ex.renderPlaceholders(e)
 		if err != nil {
 			return nil, err
 		}
-		tunnelInterfaceIP, err := utils.GetInterfaceIP(e.Interface, e.BridgePeerCIDR.IsIPv4())
-		if err != nil {
-			return nil, err
-		}
-		return ex.render(&ex.interfaceActivate, map[string]string{
-			placeholderBridgeInterface:   e.BridgeInterface,
-			placeholderBridgeInterfaceIP: bridgeInterfaceIP,
-			placeholderBridgePeerCIDR:    string(e.BridgePeerCIDR),
-			placeholderTunnelInterface:   e.Interface,
-			placeholderTunnelInterfaceIP: tunnelInterfaceIP,
-		}), nil
+
+		return ex.render(&ex.interfaceActivate, placeholders), nil
 	}()
 	if err != nil {
 		l.Error("Failed to execute interface activation script",
@@ -138,7 +129,10 @@ func (ex *Executor) ExecuteInterfaceActivate(ctx context.Context, e *event.Tunne
 		return
 	}
 
-	ex.schedule(script)
+	ex.schedule(job{
+		name:   "interface_activate",
+		script: script,
+	})
 }
 
 func (ex *Executor) ExecuteInterfaceDeactivate(ctx context.Context, e *event.TunnelInterfaceDeactivated) {
@@ -150,21 +144,12 @@ func (ex *Executor) ExecuteInterfaceDeactivate(ctx context.Context, e *event.Tun
 	}
 
 	script, err := func() (*types.Script, error) {
-		bridgeInterfaceIP, err := utils.GetInterfaceIP(e.BridgeInterface, e.BridgePeerCIDR.IsIPv4())
+		placeholders, err := ex.renderPlaceholders(e)
 		if err != nil {
 			return nil, err
 		}
-		tunnelInterfaceIP, err := utils.GetInterfaceIP(e.Interface, e.BridgePeerCIDR.IsIPv4())
-		if err != nil {
-			return nil, err
-		}
-		return ex.render(&ex.interfaceDeactivate, map[string]string{
-			placeholderBridgeInterface:   e.BridgeInterface,
-			placeholderBridgeInterfaceIP: bridgeInterfaceIP,
-			placeholderBridgePeerCIDR:    string(e.BridgePeerCIDR),
-			placeholderTunnelInterface:   e.Interface,
-			placeholderTunnelInterfaceIP: tunnelInterfaceIP,
-		}), nil
+
+		return ex.render(&ex.interfaceDeactivate, placeholders), nil
 	}()
 	if err != nil {
 		l.Error("Failed to execute interface activation script",
@@ -176,5 +161,41 @@ func (ex *Executor) ExecuteInterfaceDeactivate(ctx context.Context, e *event.Tun
 		return
 	}
 
-	ex.schedule(script)
+	ex.schedule(job{
+		name:   "interface_deactivate",
+		script: script,
+	})
+}
+
+func (ex *Executor) renderPlaceholders(e event.Event) (map[string]string, error) {
+	placeholders := map[string]string{}
+	var err error
+
+	if e, ok := e.(event.BridgeEvent); ok {
+		placeholders[placeholderBridgeInterface] = e.EvtBridgeInterface()
+		placeholders[placeholderBridgePeerCIDR] = string(e.EvtBridgePeerCIDR())
+
+		ipv4 := e.EvtBridgePeerCIDR().IsIPv4()
+		if ipv4 {
+			placeholders[placeholderProto] = "4"
+		} else {
+			placeholders[placeholderProto] = "6"
+		}
+
+		placeholders[placeholderBridgeInterfaceIP], err = utils.GetInterfaceIP(e.EvtBridgeInterface(), ipv4)
+		if err != nil {
+			return nil, err
+		}
+
+		if e, ok := e.(event.TunnelInterfaceEvent); ok {
+			placeholders[placeholderTunnelInterface] = e.EvtTunnelInterface()
+
+			placeholders[placeholderTunnelInterfaceIP], err = utils.GetInterfaceIP(e.EvtTunnelInterface(), ipv4)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return placeholders, nil
 }

@@ -15,7 +15,7 @@ func (s *Server) eventTunnelInterfaceWentDown(ctx context.Context, e *event.Tunn
 	l.Info("Tunnel interface went down",
 		zap.String("bridge_name", s.cfg.Name),
 		zap.String("bridge_uuid", s.uuid.String()),
-		zap.String("tunnel_interface", e.TunnelInterface()),
+		zap.String("tunnel_interface", e.EvtTunnelInterface()),
 	)
 
 	s.deriveBridgeEvents(e)
@@ -28,7 +28,7 @@ func (s *Server) eventTunnelInterfaceWentDown(ctx context.Context, e *event.Tunn
 	s.mxStatus.Lock()
 	defer s.mxStatus.Unlock()
 
-	ifs := s.status.Interfaces[e.TunnelInterface()]
+	ifs := s.status.Interfaces[e.EvtTunnelInterface()]
 	if !ifs.Active {
 		return
 	}
@@ -39,21 +39,21 @@ func (s *Server) eventTunnelInterfaceWentDown(ctx context.Context, e *event.Tunn
 	s.events <- &event.TunnelInterfaceDeactivated{ // emit event
 		BridgeInterface: s.cfg.BridgeInterface,
 		BridgePeerCIDR:  s.cfg.PeerCIDR,
-		Interface:       e.TunnelInterface(),
+		TunnelInterface: e.EvtTunnelInterface(),
 		Timestamp:       e.Timestamp,
 	}
 
 	// then activate another tunnel
 
 	for promotedIfsName, promotedIfs := range s.status.Interfaces {
-		if promotedIfsName == e.TunnelInterface() || !promotedIfs.Up {
+		if promotedIfsName == e.EvtTunnelInterface() || !promotedIfs.Up {
 			continue
 		}
 		promotedIfs.Active = true
 		s.events <- &event.TunnelInterfaceActivated{ // emit event
 			BridgeInterface: s.cfg.BridgeInterface,
 			BridgePeerCIDR:  s.cfg.PeerCIDR,
-			Interface:       promotedIfsName,
+			TunnelInterface: promotedIfsName,
 			Timestamp:       e.Timestamp,
 		}
 		return
@@ -66,7 +66,7 @@ func (s *Server) eventTunnelInterfaceWentUp(ctx context.Context, e *event.Tunnel
 	l.Info("Tunnel interface went up",
 		zap.String("bridge_name", s.cfg.Name),
 		zap.String("bridge_uuid", s.uuid.String()),
-		zap.String("tunnel_interface", e.TunnelInterface()),
+		zap.String("tunnel_interface", e.EvtTunnelInterface()),
 	)
 
 	s.deriveBridgeEvents(e)
@@ -83,22 +83,22 @@ func (s *Server) eventTunnelInterfaceWentUp(ctx context.Context, e *event.Tunnel
 	s.mxStatus.Lock()
 	defer s.mxStatus.Unlock()
 
-	ifs := s.status.Interfaces[e.TunnelInterface()]
-	cfg := s.cfg.TunnelInterfaces[e.TunnelInterface()]
+	ifs := s.status.Interfaces[e.EvtTunnelInterface()]
+	cfg := s.cfg.TunnelInterfaces[e.EvtTunnelInterface()]
 	switch cfg.Role {
 	case types.RoleActive:
 		if !ifs.Active {
 			// first deactivate other tunnel (if needed)
 
 			for demotedIfsName, demotedIfs := range s.status.Interfaces {
-				if demotedIfsName == e.TunnelInterface() || !demotedIfs.Active {
+				if demotedIfsName == e.EvtTunnelInterface() || !demotedIfs.Active {
 					continue
 				}
 				demotedIfs.Active = false
 				s.events <- &event.TunnelInterfaceDeactivated{ // emit event
 					BridgeInterface: s.cfg.BridgeInterface,
 					BridgePeerCIDR:  s.cfg.PeerCIDR,
-					Interface:       demotedIfsName,
+					TunnelInterface: demotedIfsName,
 					Timestamp:       e.Timestamp,
 				}
 			}
@@ -109,7 +109,7 @@ func (s *Server) eventTunnelInterfaceWentUp(ctx context.Context, e *event.Tunnel
 			s.events <- &event.TunnelInterfaceActivated{ // emit event
 				BridgeInterface: s.cfg.BridgeInterface,
 				BridgePeerCIDR:  s.cfg.PeerCIDR,
-				Interface:       e.TunnelInterface(),
+				TunnelInterface: e.EvtTunnelInterface(),
 				Timestamp:       e.Timestamp,
 			}
 
@@ -118,7 +118,7 @@ func (s *Server) eventTunnelInterfaceWentUp(ctx context.Context, e *event.Tunnel
 	case types.RoleStandby:
 		anotherActiveIfsExists := false
 		for anotherIfsName, anotherIfs := range s.status.Interfaces {
-			if anotherIfsName == e.TunnelInterface() {
+			if anotherIfsName == e.EvtTunnelInterface() {
 				continue
 			}
 			if anotherIfs.Active {
@@ -131,7 +131,7 @@ func (s *Server) eventTunnelInterfaceWentUp(ctx context.Context, e *event.Tunnel
 			s.events <- &event.TunnelInterfaceActivated{ // emit event
 				BridgeInterface: s.cfg.BridgeInterface,
 				BridgePeerCIDR:  s.cfg.PeerCIDR,
-				Interface:       e.TunnelInterface(),
+				TunnelInterface: e.EvtTunnelInterface(),
 				Timestamp:       e.Timestamp,
 			}
 		}
@@ -144,7 +144,7 @@ func (s *Server) eventTunnelInterfaceDeactivated(ctx context.Context, e *event.T
 	l.Info("Tunnel interface deactivated",
 		zap.String("bridge_name", s.cfg.Name),
 		zap.String("bridge_uuid", s.uuid.String()),
-		zap.String("tunnel_interface", e.TunnelInterface()),
+		zap.String("tunnel_interface", e.EvtTunnelInterface()),
 	)
 
 	s.executor.ExecuteInterfaceDeactivate(ctx, e)
@@ -156,7 +156,7 @@ func (s *Server) eventTunnelInterfaceActivated(ctx context.Context, e *event.Tun
 	l.Info("Tunnel interface activated",
 		zap.String("bridge_name", s.cfg.Name),
 		zap.String("bridge_uuid", s.uuid.String()),
-		zap.String("tunnel_interface", e.TunnelInterface()),
+		zap.String("tunnel_interface", e.EvtTunnelInterface()),
 	)
 
 	s.executor.ExecuteInterfaceActivate(ctx, e)

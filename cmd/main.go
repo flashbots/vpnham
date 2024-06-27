@@ -75,6 +75,9 @@ func main() {
 		zap.L().Sync() //nolint:errcheck
 	}()
 	if err := app.Run(os.Args); err != nil {
+		if err.Error() == "flag: help requested" {
+			os.Exit(0)
+		}
 		fmt.Fprintf(os.Stderr, "\nFailed with error:\n\n%s\n\n", err.Error())
 		os.Exit(1)
 	}

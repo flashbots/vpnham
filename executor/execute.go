@@ -29,10 +29,10 @@ func (ex *Executor) render(source *types.Script, params map[string]string) *type
 	return &resScript
 }
 
-func (ex *Executor) execute(ctx context.Context, script *types.Script) {
+func (ex *Executor) execute(ctx context.Context, job job) {
 	l := logutils.LoggerFromContext(ctx)
 
-	for _, _cmd := range *script {
+	for step, _cmd := range *job.script {
 		if len(_cmd) == 0 {
 			continue
 		}
@@ -62,9 +62,11 @@ func (ex *Executor) execute(ctx context.Context, script *types.Script) {
 
 		l.Info("Executed command",
 			zap.Error(err),
+			zap.Int("step", step),
 			zap.String("command", strCmd),
-			zap.String("stderr", stderr.String()),
-			zap.String("stdout", stdout.String()),
+			zap.String("script", job.name),
+			zap.String("stderr", strings.TrimSpace(stderr.String())),
+			zap.String("stdout", strings.TrimSpace(stdout.String())),
 		)
 	}
 }

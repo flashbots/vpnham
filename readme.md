@@ -70,6 +70,7 @@ There are configurable scripts (per bridge, or globally):
 
 - `bridge_activate` is triggered when a bridge is promoted to `active`.
   - Recognised placeholders are:
+    - `${proto}`
     - `${bridge_peer_cidr}`
     - `${bridge_interface}`
     - `${bridge_interface_ip}`
@@ -148,7 +149,7 @@ bridges:
         threshold_down: 7
         threshold_up: 5
 
-    scripts_timeout: 5s
+    scripts_timeout: 5s  # max amount of time for script commands to finish
 
 metrics:
   listen_addr: 0.0.0.0:8000  # where we expose the metrics (at `/metrics` path)
@@ -172,7 +173,7 @@ default_scripts:    # default scripts (complement the `scripts` on bridge config
 ```
 
 >
-> Note:
+> [!NOTE]
 >
 > See the following files for the full example:
 >
@@ -182,6 +183,7 @@ default_scripts:    # default scripts (complement the `scripts` on bridge config
 > - [br-rgt-act.yaml](./.dev/br-rgt-act.yaml)
 > - [br-rgt-sby.yaml](./.dev/br-rgt-sby.yaml)
 >
+> Also: `make docker-compose`
 
 ## CLI
 

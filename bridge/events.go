@@ -65,7 +65,7 @@ func (s *Server) runEventLoop(ctx context.Context, failureSink chan<- error) {
 				s.eventTunnelProbeSendSuccess(ctx, e, failureSink)
 			default:
 				l.Error("Unexpected event",
-					zap.String("kind", e.EventKind()),
+					zap.String("kind", e.EvtKind()),
 					zap.String("type", reflect.TypeOf(e).String()),
 				)
 			}
@@ -87,8 +87,8 @@ func (s *Server) detectTunnelUpDownEvents(e event.TunnelInterfaceEvent, updateMo
 	s.mxStatus.Lock()
 	defer s.mxStatus.Unlock()
 
-	ifs := s.status.Interfaces[e.TunnelInterface()]
-	mon := s.monitors[e.TunnelInterface()]
+	ifs := s.status.Interfaces[e.EvtTunnelInterface()]
+	mon := s.monitors[e.EvtTunnelInterface()]
 
 	updateMonitor(mon)
 
@@ -97,8 +97,10 @@ func (s *Server) detectTunnelUpDownEvents(e event.TunnelInterfaceEvent, updateMo
 		if ifs.Up {
 			ifs.Up = false
 			s.events <- &event.TunnelInterfaceWentDown{ // emit event
-				Interface: e.TunnelInterface(),
-				Timestamp: e.EventTimestamp(),
+				BridgeInterface: s.cfg.BridgeInterface,
+				BridgePeerCIDR:  s.cfg.PeerCIDR,
+				TunnelInterface: e.EvtTunnelInterface(),
+				Timestamp:       e.EvtTimestamp(),
 			}
 		}
 
@@ -106,8 +108,10 @@ func (s *Server) detectTunnelUpDownEvents(e event.TunnelInterfaceEvent, updateMo
 		if !ifs.Up {
 			ifs.Up = true
 			s.events <- &event.TunnelInterfaceWentUp{ // emit event
-				Interface: e.TunnelInterface(),
-				Timestamp: e.EventTimestamp(),
+				BridgeInterface: s.cfg.BridgeInterface,
+				BridgePeerCIDR:  s.cfg.PeerCIDR,
+				TunnelInterface: e.EvtTunnelInterface(),
+				Timestamp:       e.EvtTimestamp(),
 			}
 		}
 	}
@@ -129,11 +133,15 @@ func (s *Server) deriveBridgeEvents(e event.TunnelInterfaceEvent) {
 
 	if up {
 		s.events <- &event.BridgeWentUp{ // emit event
-			Timestamp: e.EventTimestamp(),
+			BridgeInterface: s.cfg.BridgeInterface,
+			BridgePerCIDR:   s.cfg.PeerCIDR,
+			Timestamp:       e.EvtTimestamp(),
 		}
 	} else {
 		s.events <- &event.BridgeWentDown{ // emit event
-			Timestamp: e.EventTimestamp(),
+			BridgeInterface: s.cfg.BridgeInterface,
+			BridgePeerCIDR:  s.cfg.PeerCIDR,
+			Timestamp:       e.EvtTimestamp(),
 		}
 	}
 
@@ -141,7 +149,7 @@ func (s *Server) deriveBridgeEvents(e event.TunnelInterfaceEvent) {
 }
 
 // derivePartnerUpDownEvents derives partner up/down events from partner poll events
-func (s *Server) derivePartnerUpDownEvents(e event.PartnerEvent, updateMonitor func(*monitor.Monitor)) {
+func (s *Server) derivePartnerUpDownEvents(e event.PartnerPollEvent, updateMonitor func(*monitor.Monitor)) {
 	s.mxPartnerStatus.Lock()
 	defer s.mxPartnerStatus.Unlock()
 
@@ -163,7 +171,7 @@ func (s *Server) derivePartnerUpDownEvents(e event.PartnerEvent, updateMonitor f
 		if s.partnerStatus.Up {
 			s.partnerStatus.Up = false
 			s.events <- &event.PartnerWentDown{ // emit event
-				Timestamp: e.EventTimestamp(),
+				Timestamp: e.EvtTimestamp(),
 			}
 		}
 
@@ -171,7 +179,7 @@ func (s *Server) derivePartnerUpDownEvents(e event.PartnerEvent, updateMonitor f
 		if firstContact || !s.partnerStatus.Up {
 			s.partnerStatus.Up = true
 			s.events <- &event.PartnerWentUp{ // emit events
-				Timestamp: e.EventTimestamp(),
+				Timestamp: e.EvtTimestamp(),
 			}
 		}
 	}
@@ -185,7 +193,7 @@ func (s *Server) derivePartnerUpDownEvents(e event.PartnerEvent, updateMonitor f
 			s.events <- &event.PartnerChangedName{ // emit event
 				OldName:   s.partnerStatus.Name,
 				NewName:   newPartnerStatus.Name,
-				Timestamp: e.EventTimestamp(),
+				Timestamp: e.EvtTimestamp(),
 			}
 			s.partnerStatus.Name = newPartnerStatus.Name
 		}
@@ -193,11 +201,11 @@ func (s *Server) derivePartnerUpDownEvents(e event.PartnerEvent, updateMonitor f
 		if s.partnerStatus.Active != newPartnerStatus.Active {
 			if newPartnerStatus.Active {
 				s.events <- &event.PartnerActivated{ // emit event
-					Timestamp: e.EventTimestamp(),
+					Timestamp: e.EvtTimestamp(),
 				}
 			} else {
 				s.events <- &event.PartnerDeactivated{ // emit event
-					Timestamp: e.EventTimestamp(),
+					Timestamp: e.EvtTimestamp(),
 				}
 			}
 			s.partnerStatus.Active = newPartnerStatus.Active

@@ -12,10 +12,18 @@ type BridgeActivated struct {
 	Timestamp       time.Time
 }
 
-func (e *BridgeActivated) EventKind() string {
+func (e *BridgeActivated) EvtKind() string {
 	return "bridge_activated"
 }
 
-func (e *BridgeActivated) EventTimestamp() time.Time {
+func (e *BridgeActivated) EvtBridgeInterface() string {
+	return e.BridgeInterface
+}
+
+func (e *BridgeActivated) EvtBridgePeerCIDR() types.CIDR {
+	return e.BridgePeerCIDR
+}
+
+func (e *BridgeActivated) EvtTimestamp() time.Time {
 	return e.Timestamp
 }

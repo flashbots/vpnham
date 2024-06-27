@@ -1,9 +1,13 @@
 package executor
 
 const (
-	placeholderBridgePeerCIDR    = "bridge_peer_cidr"
+	placeholderProto = "proto"
+
 	placeholderBridgeInterface   = "bridge_interface"
 	placeholderBridgeInterfaceIP = "bridge_interface_ip"
-	placeholderTunnelInterface   = "tunnel_interface"
-	placeholderTunnelInterfaceIP = "tunnel_interface_ip"
+	placeholderBridgePeerCIDR    = "bridge_peer_cidr"
+
+	placeholderTunnelInterface      = "tunnel_interface"
+	placeholderTunnelInterfaceIP    = "tunnel_interface_ip"
+	placeholderTunnelInterfaceProto = "tunnel_interface_proto"
 )

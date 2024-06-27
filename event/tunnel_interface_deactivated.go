@@ -9,18 +9,26 @@ import (
 type TunnelInterfaceDeactivated struct {
 	BridgeInterface string
 	BridgePeerCIDR  types.CIDR
-	Interface       string
+	TunnelInterface string
 	Timestamp       time.Time
 }
 
-func (e *TunnelInterfaceDeactivated) EventKind() string {
+func (e *TunnelInterfaceDeactivated) EvtKind() string {
 	return "tunnel_interface_deactivated"
 }
 
-func (e *TunnelInterfaceDeactivated) EventTimestamp() time.Time {
-	return e.Timestamp
+func (e *TunnelInterfaceDeactivated) EvtBridgeInterface() string {
+	return e.BridgeInterface
 }
 
-func (e *TunnelInterfaceDeactivated) TunnelInterface() string {
-	return e.Interface
+func (e *TunnelInterfaceDeactivated) EvtBridgePeerCIDR() types.CIDR {
+	return e.BridgePeerCIDR
+}
+
+func (e *TunnelInterfaceDeactivated) EvtTunnelInterface() string {
+	return e.TunnelInterface
+}
+
+func (e *TunnelInterfaceDeactivated) EvtTimestamp() time.Time {
+	return e.Timestamp
 }

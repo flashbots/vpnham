@@ -6,10 +6,10 @@ type ConnectivityLost struct {
 	Timestamp time.Time
 }
 
-func (e *ConnectivityLost) EventKind() string {
+func (e *ConnectivityLost) EvtKind() string {
 	return "connectivity_lost"
 }
 
-func (e *ConnectivityLost) EventTimestamp() time.Time {
+func (e *ConnectivityLost) EvtTimestamp() time.Time {
 	return e.Timestamp
 }

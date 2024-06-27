@@ -85,7 +85,7 @@ func NewServer(ctx context.Context, cfg *config.Bridge) (*Server, error) {
 		peers:        make(map[string]*types.Peer, cfg.TunnelInterfacesCount()),
 		transponders: make(map[string]*transponder.Transponder, cfg.TunnelInterfacesCount()),
 
-		events: make(chan event.Event, 4*cfg.TunnelInterfacesCount()),
+		events: make(chan event.Event, 2*cfg.TunnelInterfacesCount()),
 
 		status: &types.BridgeStatus{
 			Name:       cfg.Name,

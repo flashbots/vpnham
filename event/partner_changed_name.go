@@ -8,10 +8,10 @@ type PartnerChangedName struct {
 	Timestamp time.Time
 }
 
-func (e *PartnerChangedName) EventKind() string {
+func (e *PartnerChangedName) EvtKind() string {
 	return "partner_changed_name"
 }
 
-func (e *PartnerChangedName) EventTimestamp() time.Time {
+func (e *PartnerChangedName) EvtTimestamp() time.Time {
 	return e.Timestamp
 }
