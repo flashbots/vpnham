@@ -87,8 +87,9 @@ func (s *Server) respondToProbe(
 ) {
 	l := logutils.LoggerFromContext(ctx)
 
+	// we only fill our location and our timestamp;  the uuid is filled
+	// in by the sender (for the sender's bookkeeping)
 	probe.DstLocation = s.cfg.ProbeLocation
-	probe.DstUUID = s.cfg.UUID
 	probe.DstTimestamp = time.Now()
 
 	tp.SendProbe(probe, from, func(err error) {
