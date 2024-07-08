@@ -20,7 +20,10 @@ var (
 	errBridgeReturnProbeSrcUUIDMismatch = errors.New("return probe has source uuid mismatch")
 )
 
-func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleStatus(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	l := logutils.LoggerFromRequest(r)
 
 	defer r.Body.Close()
@@ -29,6 +32,15 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 			zap.Error(err),
 			zap.String("bridge_name", s.cfg.Name),
 		)
+	}
+
+	if r.Method != http.MethodGet {
+		l.Warn("Unexpected status request method",
+			zap.String("bridge_name", s.cfg.Name),
+			zap.String("method", r.Method),
+		)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	s.mxStatus.Lock()
@@ -75,7 +87,11 @@ func (s *Server) handleProbe(
 	}
 }
 
-func (s *Server) handleTick(ctx context.Context, ts time.Time, failureSink chan<- error) {
+func (s *Server) handleTick(
+	ctx context.Context,
+	ts time.Time,
+	failureSink chan<- error,
+) {
 	l := logutils.LoggerFromContext(ctx)
 
 	l.Debug("Handling timer tick",
