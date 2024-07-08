@@ -52,6 +52,8 @@ const (
 func NewServer(ctx context.Context, cfg *config.Bridge) (*Server, error) {
 	l := logutils.LoggerFromContext(ctx)
 
+	ts := time.Now()
+
 	_uuid, err := uuid.NewRandom()
 	if err != nil {
 		return nil, err
@@ -92,10 +94,11 @@ func NewServer(ctx context.Context, cfg *config.Bridge) (*Server, error) {
 		events: make(chan event.Event, 2*cfg.TunnelInterfacesCount()),
 
 		status: &types.BridgeStatus{
-			Name:       cfg.Name,
-			Active:     false, // inactive at start, activate only when tunnels are up
-			Role:       cfg.Role,
-			Interfaces: make(map[string]*types.TunnelInterfaceStatus, cfg.TunnelInterfacesCount()),
+			Name:        cfg.Name,
+			Active:      false, // inactive at start, activate only when tunnels are up
+			ActiveSince: ts,
+			Role:        cfg.Role,
+			Interfaces:  make(map[string]*types.TunnelInterfaceStatus, cfg.TunnelInterfacesCount()),
 		},
 	}
 
@@ -144,8 +147,10 @@ func NewServer(ctx context.Context, cfg *config.Bridge) (*Server, error) {
 
 		// status
 		s.status.Interfaces[ifsName] = &types.TunnelInterfaceStatus{
-			Active: false, // inactive at start, activate only when probes report Ok
-			Up:     false,
+			Active:      false, // inactive at start, activate only when probes report Ok
+			ActiveSince: ts,
+			Up:          false,
+			UpSince:     ts,
 		}
 	}
 

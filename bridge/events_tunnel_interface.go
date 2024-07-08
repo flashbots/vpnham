@@ -35,6 +35,7 @@ func (s *Server) eventTunnelInterfaceWentDown(ctx context.Context, e *event.Tunn
 	// first deactivate self
 
 	ifs.Active = false
+	ifs.ActiveSince = e.Timestamp
 	s.events <- &event.TunnelInterfaceDeactivated{ // emit event
 		BridgeInterface: s.cfg.BridgeInterface,
 		BridgePeerCIDR:  s.cfg.PeerCIDR,
@@ -49,6 +50,7 @@ func (s *Server) eventTunnelInterfaceWentDown(ctx context.Context, e *event.Tunn
 			continue
 		}
 		promotedIfs.Active = true
+		promotedIfs.ActiveSince = e.Timestamp
 		s.events <- &event.TunnelInterfaceActivated{ // emit event
 			BridgeInterface: s.cfg.BridgeInterface,
 			BridgePeerCIDR:  s.cfg.PeerCIDR,
@@ -93,6 +95,7 @@ func (s *Server) eventTunnelInterfaceWentUp(ctx context.Context, e *event.Tunnel
 					continue
 				}
 				demotedIfs.Active = false
+				demotedIfs.ActiveSince = e.Timestamp
 				s.events <- &event.TunnelInterfaceDeactivated{ // emit event
 					BridgeInterface: s.cfg.BridgeInterface,
 					BridgePeerCIDR:  s.cfg.PeerCIDR,
@@ -104,6 +107,7 @@ func (s *Server) eventTunnelInterfaceWentUp(ctx context.Context, e *event.Tunnel
 			// then activate self
 
 			ifs.Active = true
+			ifs.ActiveSince = e.Timestamp
 			s.events <- &event.TunnelInterfaceActivated{ // emit event
 				BridgeInterface: s.cfg.BridgeInterface,
 				BridgePeerCIDR:  s.cfg.PeerCIDR,
@@ -126,6 +130,7 @@ func (s *Server) eventTunnelInterfaceWentUp(ctx context.Context, e *event.Tunnel
 		}
 		if !anotherActiveIfsExists {
 			ifs.Active = true
+			ifs.ActiveSince = e.Timestamp
 			s.events <- &event.TunnelInterfaceActivated{ // emit event
 				BridgeInterface: s.cfg.BridgeInterface,
 				BridgePeerCIDR:  s.cfg.PeerCIDR,

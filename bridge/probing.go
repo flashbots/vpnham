@@ -131,13 +131,13 @@ func (s *Server) processReturnedProbe(
 	peer := s.peers[tp.InterfaceName()]
 	// check for errors
 	if probe.DstUUID != peer.UUID() {
+		err := fmt.Errorf("%w: expected %s, got %s",
+			errBridgeReturnProbeDstUUIDMismatch, peer.UUID(), probe.DstUUID,
+		)
 		l.Warn("Invalid return probe",
+			zap.Error(err),
 			zap.String("bridge_name", s.cfg.Name),
 			zap.String("tunnel_interface", tp.InterfaceName()),
-
-			zap.Error(fmt.Errorf("%w: expected %s, got %s",
-				errBridgeReturnProbeDstUUIDMismatch, peer.UUID(), probe.DstUUID,
-			)),
 		)
 		return
 	}

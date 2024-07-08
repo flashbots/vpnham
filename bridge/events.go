@@ -94,6 +94,7 @@ func (s *Server) detectTunnelUpDownEvents(e event.TunnelInterfaceEvent, updateMo
 	case monitor.Down:
 		if ifs.Up {
 			ifs.Up = false
+			ifs.UpSince = e.EvtTimestamp()
 			s.events <- &event.TunnelInterfaceWentDown{ // emit event
 				BridgeInterface: s.cfg.BridgeInterface,
 				BridgePeerCIDR:  s.cfg.PeerCIDR,
@@ -105,6 +106,7 @@ func (s *Server) detectTunnelUpDownEvents(e event.TunnelInterfaceEvent, updateMo
 	case monitor.Up:
 		if !ifs.Up {
 			ifs.Up = true
+			ifs.UpSince = e.EvtTimestamp()
 			s.events <- &event.TunnelInterfaceWentUp{ // emit event
 				BridgeInterface: s.cfg.BridgeInterface,
 				BridgePeerCIDR:  s.cfg.PeerCIDR,
@@ -207,6 +209,7 @@ func (s *Server) derivePartnerUpDownEvents(e event.PartnerPollEvent, updateMonit
 				}
 			}
 			s.partnerStatus.Active = newPartnerStatus.Active
+			s.partnerStatus.ActiveSince = newPartnerStatus.ActiveSince
 		}
 	}
 }

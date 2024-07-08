@@ -67,6 +67,7 @@ func (s *Server) eventPartnerWentDown(ctx context.Context, e *event.PartnerWentD
 
 	if s.partnerStatus.Active {
 		s.partnerStatus.Active = false
+		s.partnerStatus.ActiveSince = e.EvtTimestamp()
 		s.events <- &event.PartnerDeactivated{ // emit event
 			Timestamp: e.EvtTimestamp(),
 		}
@@ -74,6 +75,7 @@ func (s *Server) eventPartnerWentDown(ctx context.Context, e *event.PartnerWentD
 
 	if !s.status.Active {
 		s.status.Active = true
+		s.status.ActiveSince = e.Timestamp
 		s.events <- &event.BridgeActivated{ // emit event
 			BridgeInterface: s.cfg.BridgeInterface,
 			BridgePeerCIDR:  s.cfg.PeerCIDR,
@@ -94,6 +96,7 @@ func (s *Server) eventPartnerWentUp(ctx context.Context, e *event.PartnerWentUp,
 
 	if s.status.Active && s.cfg.Role != types.RoleActive {
 		s.status.Active = false
+		s.status.ActiveSince = e.Timestamp
 		s.events <- &event.BridgeDeactivated{
 			Timestamp: e.Timestamp,
 		}
