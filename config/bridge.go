@@ -22,7 +22,7 @@ type Bridge struct {
 	PeerCIDR        types.CIDR `yaml:"peer_cidr"`
 
 	StatusAddr                 types.Address `yaml:"status_addr"`
-	PartnerStatusURL           string        `yaml:"partner_status_url"`
+	PartnerURL                 string        `yaml:"partner_url"`
 	PartnerStatusTimeout       time.Duration `yaml:"partner_status_timeout"`
 	PartnerStatusThresholdDown int           `yaml:"partner_status_threshold_down"`
 	PartnerStatusThresholdUp   int           `yaml:"partner_status_threshold_up"`
@@ -80,8 +80,8 @@ func (b *Bridge) Validate() error {
 		}
 	}
 
-	{ // partner_status_url
-		if _, err := url.Parse(b.PartnerStatusURL); err != nil {
+	{ // partner_url
+		if _, err := url.Parse(b.PartnerURL); err != nil {
 			return fmt.Errorf("%w: %w",
 				errBridgePartnerStatusURLIsInvalid, err,
 			)

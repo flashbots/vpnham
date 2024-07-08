@@ -7,30 +7,30 @@ import (
 )
 
 type Partner struct {
-	statusURL *url.URL
+	url *url.URL
 
 	sequence uint64
 }
 
 var (
-	errPartnerStatusURLIsInvalid = errors.New("bridge partner status url is invalid")
+	errPartnerURLIsInvalid = errors.New("bridge partner url is invalid")
 )
 
-func NewPartner(statusURL string) (*Partner, error) {
-	_statusURL, err := url.Parse(statusURL)
+func NewPartner(partnerURL string) (*Partner, error) {
+	_url, err := url.Parse(partnerURL)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w",
-			errPartnerStatusURLIsInvalid, err,
+			errPartnerURLIsInvalid, err,
 		)
 	}
 
 	return &Partner{
-		statusURL: _statusURL,
+		url: _url,
 	}, nil
 }
 
-func (p *Partner) StatusURL() *url.URL {
-	return p.statusURL
+func (p *Partner) URL() *url.URL {
+	return p.url
 }
 
 func (p *Partner) Sequence() uint64 {

@@ -26,7 +26,7 @@ func (s *Server) pollPartnerBridge(ctx context.Context, _ chan<- error) {
 
 	req := &http.Request{
 		Method: http.MethodGet,
-		URL:    s.partner.StatusURL(),
+		URL:    s.partner.URL().JoinPath(pathStatus),
 		Header: map[string][]string{"accept": {"application/json"}},
 	}
 

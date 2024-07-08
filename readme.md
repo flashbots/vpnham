@@ -127,7 +127,7 @@ bridges:
     peer_cidr: 10.1.0.0/16  # CIDR range of the VPC we are bridging into
 
     status_addr: 10.0.0.2:8080                 # address where our partner polls our status
-    partner_status_url: http://10.0.0.3:8080/  # url where we poll the status of the partner
+    partner_url: http://10.0.0.3:8080/  # url where we poll the status of the partner
 
     probe_interval: 1s           # interval between UDP probes or status polls
     probe_location: left/active  # location label for the latency metrics

@@ -45,6 +45,10 @@ type Server struct {
 	mxStatus sync.Mutex
 }
 
+const (
+	pathStatus = "status"
+)
+
 func NewServer(ctx context.Context, cfg *config.Bridge) (*Server, error) {
 	l := logutils.LoggerFromContext(ctx)
 
@@ -60,7 +64,7 @@ func NewServer(ctx context.Context, cfg *config.Bridge) (*Server, error) {
 		return nil, err
 	}
 
-	partner, err := types.NewPartner(cfg.PartnerStatusURL)
+	partner, err := types.NewPartner(cfg.PartnerURL)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +100,7 @@ func NewServer(ctx context.Context, cfg *config.Bridge) (*Server, error) {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("/", http.HandlerFunc(s.handleStatus))
+	mux.Handle("/"+pathStatus, http.HandlerFunc(s.handleStatus))
 	handler := httplogger.Middleware(l, mux)
 
 	s.server = &http.Server{

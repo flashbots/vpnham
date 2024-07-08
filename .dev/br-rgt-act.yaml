@@ -6,7 +6,7 @@ bridges:
     peer_cidr: 10.0.0.0/16
 
     status_addr: 10.1.0.2:8080
-    partner_status_url: http://10.1.0.3:8080/
+    partner_url: http://10.1.0.3:8080/
 
     probe_interval: 1s
     probe_location: right/active
