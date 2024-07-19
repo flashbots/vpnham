@@ -1,6 +1,6 @@
-# stage: build ---------------------------------------------------------
+# stage: prefetch ------------------------------------------------------
 
-FROM golang:1.22-alpine as build
+FROM golang:1.22-alpine as prefetch
 
 RUN apk add --no-cache gcc musl-dev linux-headers
 
@@ -8,6 +8,10 @@ WORKDIR /go/src/github.com/flashbots/vpnham
 
 COPY go.* ./
 RUN go mod download
+
+# stage: build ---------------------------------------------------------
+
+FROM prefetch as build
 
 COPY . .
 

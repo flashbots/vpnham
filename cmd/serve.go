@@ -1,14 +1,17 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
 	"slices"
 
 	"github.com/flashbots/vpnham/config"
+	"github.com/flashbots/vpnham/logutils"
 	"github.com/flashbots/vpnham/server"
 	"github.com/urfave/cli/v2"
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 )
 
@@ -39,7 +42,10 @@ func CommandServe(cfg *config.Config) *cli.Command {
 		Usage: "run vpnham server",
 		Flags: flags,
 
-		Before: func(ctx *cli.Context) error {
+		Before: func(_ *cli.Context) error {
+			l := zap.L()
+			ctx := logutils.ContextWithLogger(context.Background(), l)
+
 			if _, err := os.Stat(configFile); err != nil {
 				return fmt.Errorf("%w: %w", errConfigFailedToRead, err)
 			}
@@ -51,8 +57,10 @@ func CommandServe(cfg *config.Config) *cli.Command {
 			if err := yaml.UnmarshalStrict(b, cfgServer); err != nil {
 				return fmt.Errorf("%w: %w", errConfigFailedToRead, err)
 			}
-			cfgServer.PostLoad()
-			if err := cfgServer.Validate(); err != nil {
+			if err := cfgServer.PostLoad(ctx); err != nil {
+				return err
+			}
+			if err := cfgServer.Validate(ctx); err != nil {
 				return fmt.Errorf("%w: %w", errConfigIsInvalid, err)
 			}
 			cfg.Server = cfgServer

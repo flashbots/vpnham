@@ -10,7 +10,10 @@ import (
 
 	"github.com/flashbots/vpnham/event"
 	"github.com/flashbots/vpnham/logutils"
+	"github.com/flashbots/vpnham/metrics"
 	"github.com/flashbots/vpnham/types"
+	"go.opentelemetry.io/otel/attribute"
+	otelapi "go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 )
 
@@ -38,7 +41,6 @@ func (s *Server) pollPartnerBridge(ctx context.Context, _ chan<- error) {
 	if err != nil {
 		l.Debug("Failed to query partner bridge status",
 			zap.Error(err),
-			zap.String("bridge_name", s.cfg.Name),
 		)
 		s.events <- &event.PartnerPollFailure{ // emit event
 			Sequence:  sequence,
@@ -50,10 +52,13 @@ func (s *Server) pollPartnerBridge(ctx context.Context, _ chan<- error) {
 
 	b, err := io.ReadAll(res.Body)
 	if err != nil {
-		l.Warn("Failed to read partner bridge status",
+		l.Error("Failed to read partner bridge status",
 			zap.Error(err),
-			zap.String("bridge_name", s.cfg.Name),
 		)
+		metrics.Errors.Add(ctx, 1, otelapi.WithAttributes(
+			attribute.String(metrics.LabelBridge, s.cfg.Name),
+			attribute.String(metrics.LabelErrorScope, metrics.ScopePartnerPolling),
+		))
 		s.events <- &event.PartnerPollFailure{ // emit event
 			Sequence:  sequence,
 			Timestamp: time.Now(),
@@ -63,10 +68,13 @@ func (s *Server) pollPartnerBridge(ctx context.Context, _ chan<- error) {
 
 	partnerStatus := &types.BridgeStatus{}
 	if err := json.Unmarshal(b, partnerStatus); err != nil {
-		l.Warn("Failed to parse partner bridge status",
+		l.Error("Failed to parse partner bridge status",
 			zap.Error(err),
-			zap.String("bridge_name", s.cfg.Name),
 		)
+		metrics.Errors.Add(ctx, 1, otelapi.WithAttributes(
+			attribute.String(metrics.LabelBridge, s.cfg.Name),
+			attribute.String(metrics.LabelErrorScope, metrics.ScopePartnerPolling),
+		))
 		s.events <- &event.PartnerPollFailure{ // emit event
 			Sequence:  sequence,
 			Timestamp: time.Now(),

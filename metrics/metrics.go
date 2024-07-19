@@ -37,6 +37,7 @@ func Setup(
 		setupProbesFailed,
 		setupProbesLatencyForward,
 		setupProbesLatencyReturn,
+		setupErrors,
 	} {
 		if err := setup(ctx, cfg); err != nil {
 			return err
@@ -96,6 +97,8 @@ func setupLatencyBoundariesUs(ctx context.Context, cfg *config.Metrics) error {
 	return nil
 }
 
+// Bridge
+
 func setupBridgeActive(ctx context.Context, _ *config.Metrics) error {
 	bridgeActive, err := meter.Int64ObservableGauge("bridge_active",
 		otelapi.WithDescription("number of active bridges at a given moment"),
@@ -139,6 +142,8 @@ func setupTunnelInterfaceUp(ctx context.Context, _ *config.Metrics) error {
 	TunnelInterfaceUp = tunnelInterfaceUp
 	return nil
 }
+
+// Probes
 
 func setupProbesSent(ctx context.Context, _ *config.Metrics) error {
 	probesSent, err := meter.Int64Counter("probes_sent",
@@ -196,5 +201,18 @@ func setupProbesLatencyReturn(ctx context.Context, _ *config.Metrics) error {
 		return err
 	}
 	ProbesLatencyReturn = probesLatencyReturn
+	return nil
+}
+
+// Errors
+
+func setupErrors(ctx context.Context, _ *config.Metrics) error {
+	errors, err := meter.Int64Counter("errors",
+		otelapi.WithDescription("errors count"),
+	)
+	if err != nil {
+		return err
+	}
+	Errors = errors
 	return nil
 }

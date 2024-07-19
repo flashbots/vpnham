@@ -16,8 +16,8 @@ func (s *Server) eventTunnelProbeSendSuccess(ctx context.Context, e *event.Tunne
 	})
 
 	metrics.ProbesSent.Add(ctx, 1, otelapi.WithAttributes(
-		attribute.String("bridge_name", s.cfg.Name),
-		attribute.String("interface_name", e.TunnelInterface),
+		attribute.String(metrics.LabelBridge, s.cfg.Name),
+		attribute.String(metrics.LabelTunnel, e.TunnelInterface),
 	))
 }
 
@@ -27,8 +27,8 @@ func (s *Server) eventTunnelProbeSendFailure(ctx context.Context, e *event.Tunne
 	})
 
 	metrics.ProbesFailed.Add(ctx, 1, otelapi.WithAttributes(
-		attribute.String("bridge_name", s.cfg.Name),
-		attribute.String("interface_name", e.TunnelInterface),
+		attribute.String(metrics.LabelBridge, s.cfg.Name),
+		attribute.String(metrics.LabelTunnel, e.TunnelInterface),
 	))
 }
 
@@ -38,22 +38,22 @@ func (s *Server) eventTunnelProbeReturnSuccess(ctx context.Context, e *event.Tun
 	})
 
 	metrics.ProbesReturned.Add(ctx, 1, otelapi.WithAttributes(
-		attribute.String("bridge_name", s.cfg.Name),
-		attribute.String("interface_name", e.TunnelInterface),
+		attribute.String(metrics.LabelBridge, s.cfg.Name),
+		attribute.String(metrics.LabelTunnel, e.TunnelInterface),
 	))
 
 	metrics.ProbesLatencyForward.Record(ctx, float64(e.LatencyForward.Milliseconds()), otelapi.WithAttributes(
-		attribute.String("bridge_name", s.cfg.Name),
-		attribute.String("interface_name", e.TunnelInterface),
-		attribute.String("location_from", s.cfg.ProbeLocation.String()),
-		attribute.String("location_to", e.Location),
+		attribute.String(metrics.LabelBridge, s.cfg.Name),
+		attribute.String(metrics.LabelTunnel, e.TunnelInterface),
+		attribute.String(metrics.LabelProbeDst, e.Location),
+		attribute.String(metrics.LabelProbeSrc, s.cfg.ProbeLocation.String()),
 	))
 
 	metrics.ProbesLatencyReturn.Record(ctx, float64(e.LatencyReturn.Milliseconds()), otelapi.WithAttributes(
-		attribute.String("bridge_name", s.cfg.Name),
-		attribute.String("interface_name", e.TunnelInterface),
-		attribute.String("location_from", e.Location),
-		attribute.String("location_to", s.cfg.ProbeLocation.String()),
+		attribute.String(metrics.LabelBridge, s.cfg.Name),
+		attribute.String(metrics.LabelTunnel, e.TunnelInterface),
+		attribute.String(metrics.LabelProbeDst, s.cfg.ProbeLocation.String()),
+		attribute.String(metrics.LabelProbeSrc, e.Location),
 	))
 }
 
@@ -63,7 +63,7 @@ func (s *Server) eventTunnelProbeReturnFailure(ctx context.Context, e *event.Tun
 	})
 
 	metrics.ProbesFailed.Add(ctx, 1, otelapi.WithAttributes(
-		attribute.String("bridge_name", s.cfg.Name),
-		attribute.String("interface_name", e.TunnelInterface),
+		attribute.String(metrics.LabelBridge, s.cfg.Name),
+		attribute.String(metrics.LabelTunnel, e.TunnelInterface),
 	))
 }

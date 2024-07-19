@@ -7,11 +7,16 @@ import (
 	"net"
 
 	"github.com/flashbots/vpnham/logutils"
+	"github.com/flashbots/vpnham/metrics"
 	"github.com/flashbots/vpnham/types"
+	"go.opentelemetry.io/otel/attribute"
+	otelapi "go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 )
 
 type Transponder struct {
+	name string
+
 	ifsAddr *net.UDPAddr
 	ifsName string
 
@@ -31,13 +36,15 @@ var (
 	errTransponderReceiverIsNotSet    = errors.New("transponder receiver method is not set")
 )
 
-func New(ifsName string, ifsAddr types.Address) (*Transponder, error) {
+func New(name, ifsName string, ifsAddr types.Address) (*Transponder, error) {
 	ip, port, err := ifsAddr.Parse()
 	if err != nil {
 		return nil, err
 	}
 
 	return &Transponder{
+		name: name,
+
 		ifsName: ifsName,
 		ifsAddr: &net.UDPAddr{IP: ip, Port: port},
 	}, nil
@@ -183,10 +190,14 @@ func (tp *Transponder) listen(ctx context.Context, failureSink chan<- error) {
 
 		probe := &types.Probe{}
 		if err := probe.UnmarshalBinary(buf[:length]); err != nil {
-			l.Warn("Failed to unmarshal incoming probe",
-				zap.String("transponder_addr", tp.ifsAddr.String()),
+			l.Error("Failed to unmarshal incoming probe",
 				zap.Error(err),
+				zap.String("transponder_addr", tp.ifsAddr.String()),
 			)
+			metrics.Errors.Add(ctx, 1, otelapi.WithAttributes(
+				attribute.String(metrics.LabelBridge, tp.name),
+				attribute.String(metrics.LabelErrorScope, metrics.ScopePeerProbing),
+			))
 			continue
 		}
 

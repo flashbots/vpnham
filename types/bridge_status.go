@@ -27,3 +27,12 @@ type BridgeStatus struct {
 	// Interfaces is the dictionary with bridge interface statuses.
 	Interfaces map[string]*TunnelInterfaceStatus `json:"interfaces"`
 }
+
+func (b *BridgeStatus) ActiveInterface() string {
+	for ifsName, ifs := range b.Interfaces {
+		if ifs.Active {
+			return ifsName
+		}
+	}
+	return ""
+}

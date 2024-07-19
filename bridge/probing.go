@@ -8,8 +8,11 @@ import (
 
 	"github.com/flashbots/vpnham/event"
 	"github.com/flashbots/vpnham/logutils"
+	"github.com/flashbots/vpnham/metrics"
 	"github.com/flashbots/vpnham/transponder"
 	"github.com/flashbots/vpnham/types"
+	"go.opentelemetry.io/otel/attribute"
+	otelapi "go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 )
 
@@ -31,12 +34,15 @@ func (s *Server) sendProbes(ctx context.Context, _ chan<- error) {
 
 		s.transponders[ifsName].SendProbe(probe, peer.ProbeAddr(), func(err error) {
 			if err != nil {
-				l.Warn("Failed to send a probe",
+				l.Error("Failed to send a probe",
 					zap.Error(err),
-					zap.String("bridge_name", s.cfg.Name),
 					zap.String("tunnel_interface", peer.InterfaceName()),
 					zap.Uint64("sequence", probe.Sequence),
 				)
+				metrics.Errors.Add(ctx, 1, otelapi.WithAttributes(
+					attribute.String(metrics.LabelBridge, s.cfg.Name),
+					attribute.String(metrics.LabelErrorScope, metrics.ScopePeerProbing),
+				))
 				s.events <- &event.TunnelProbeSendFailure{ // emit event
 					TunnelInterface: ifsName,
 					ProbeSequence:   probe.Sequence,
@@ -46,7 +52,6 @@ func (s *Server) sendProbes(ctx context.Context, _ chan<- error) {
 			}
 
 			l.Debug("Sent a probe",
-				zap.String("bridge_name", s.cfg.Name),
 				zap.String("tunnel_interface", peer.InterfaceName()),
 				zap.Uint64("sequence", probe.Sequence),
 			)
@@ -65,7 +70,6 @@ func (s *Server) detectMissedProbes(ctx context.Context, _ chan<- error) {
 	for ifsName, peer := range s.peers {
 		for missed := peer.Acknowledgement() + 1; missed < peer.Sequence(); missed++ {
 			l.Debug("Missed a probe (gap in acknowledgement)",
-				zap.String("bridge_name", s.cfg.Name),
 				zap.String("tunnel_interface", peer.InterfaceName()),
 				zap.Uint64("sequence", missed),
 			)
@@ -95,19 +99,21 @@ func (s *Server) respondToProbe(
 	tp.SendProbe(probe, from, func(err error) {
 		if err == nil {
 			l.Debug("Responded to probe",
-				zap.String("bridge_name", s.cfg.Name),
 				zap.String("dst_uuid", probe.DstUUID.String()),
 				zap.String("tunnel_interface", tp.InterfaceName()),
 				zap.Time("dst_timestamp", probe.DstTimestamp),
 				zap.Uint64("sequence", probe.Sequence),
 			)
 		} else {
-			l.Warn("Failed to respond to incoming probe",
+			l.Error("Failed to respond to incoming probe",
 				zap.Error(err),
-				zap.String("bridge_name", s.cfg.Name),
 				zap.String("tunnel_interface", tp.InterfaceName()),
 				zap.Uint64("sequence", probe.Sequence),
 			)
+			metrics.Errors.Add(ctx, 1, otelapi.WithAttributes(
+				attribute.String(metrics.LabelBridge, s.cfg.Name),
+				attribute.String(metrics.LabelErrorScope, metrics.ScopePeerProbing),
+			))
 		}
 	})
 }
@@ -123,7 +129,6 @@ func (s *Server) processReturnedProbe(
 	l := logutils.LoggerFromContext(ctx)
 
 	l.Debug("Processing returned probe...",
-		zap.String("bridge_name", s.cfg.Name),
 		zap.String("tunnel_interface", tp.InterfaceName()),
 		zap.Uint64("sequence", probe.Sequence),
 	)
@@ -134,17 +139,19 @@ func (s *Server) processReturnedProbe(
 		err := fmt.Errorf("%w: expected %s, got %s",
 			errBridgeReturnProbeDstUUIDMismatch, peer.UUID(), probe.DstUUID,
 		)
-		l.Warn("Invalid return probe",
+		l.Error("Invalid return probe",
 			zap.Error(err),
-			zap.String("bridge_name", s.cfg.Name),
 			zap.String("tunnel_interface", tp.InterfaceName()),
 		)
+		metrics.Errors.Add(ctx, 1, otelapi.WithAttributes(
+			attribute.String(metrics.LabelBridge, s.cfg.Name),
+			attribute.String(metrics.LabelErrorScope, metrics.ScopePeerProbing),
+		))
 		return
 	}
 	// detect missed probes
 	for missed := peer.Acknowledgement() + 1; missed < probe.Sequence; missed++ {
 		l.Debug("Missed a probe (later probe came in)",
-			zap.String("bridge_name", s.cfg.Name),
 			zap.String("tunnel_interface", peer.InterfaceName()),
 			zap.Uint64("sequence", missed),
 		)
@@ -173,12 +180,15 @@ func (s *Server) processMismatchedReturnedProbes(
 ) {
 	l := logutils.LoggerFromContext(ctx)
 
-	l.Warn("Invalid probe",
-		zap.String("bridge_name", s.cfg.Name),
+	l.Error("Invalid probe",
 		zap.String("tunnel_interface", tp.InterfaceName()),
 
 		zap.Error(fmt.Errorf("%w: expected %s, got %s",
 			errBridgeReturnProbeSrcUUIDMismatch, s.uuid, probe.SrcUUID,
 		)),
 	)
+	metrics.Errors.Add(ctx, 1, otelapi.WithAttributes(
+		attribute.String(metrics.LabelBridge, s.cfg.Name),
+		attribute.String(metrics.LabelErrorScope, metrics.ScopePeerProbing),
+	))
 }

@@ -30,7 +30,7 @@ func NewServer(ctx context.Context, cfg *config.Metrics) *Server {
 	mux.Handle("/metrics", promhttp.Handler())
 
 	s.server = &http.Server{
-		Addr:              string(cfg.ListenAddr),
+		Addr:              cfg.ListenAddr.String(),
 		ErrorLog:          logutils.NewHttpServerErrorLogger(l),
 		Handler:           mux,
 		MaxHeaderBytes:    1024,

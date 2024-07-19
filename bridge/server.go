@@ -10,10 +10,10 @@ import (
 
 	"github.com/flashbots/vpnham/config"
 	"github.com/flashbots/vpnham/event"
-	"github.com/flashbots/vpnham/executor"
 	"github.com/flashbots/vpnham/httplogger"
 	"github.com/flashbots/vpnham/logutils"
 	"github.com/flashbots/vpnham/monitor"
+	"github.com/flashbots/vpnham/reconciler"
 	"github.com/flashbots/vpnham/transponder"
 	"github.com/flashbots/vpnham/types"
 	"github.com/google/uuid"
@@ -25,9 +25,9 @@ type Server struct {
 
 	uuid uuid.UUID
 
-	server   *http.Server
-	ticker   *time.Ticker
-	executor *executor.Executor
+	reconciler *reconciler.Reconciler
+	server     *http.Server
+	ticker     *time.Ticker
 
 	partner        *types.Partner
 	partnerMonitor *monitor.Monitor
@@ -43,6 +43,11 @@ type Server struct {
 
 	status   *types.BridgeStatus
 	mxStatus sync.Mutex
+
+	reapply struct {
+		bridgeActivate    *types.ReapplyStatus
+		interfaceActivate *types.ReapplyStatus
+	}
 }
 
 const (
@@ -61,7 +66,7 @@ func NewServer(ctx context.Context, cfg *config.Bridge) (*Server, error) {
 
 	cfg.UUID = _uuid
 
-	executor, err := executor.New(cfg)
+	reconciler, err := reconciler.New(cfg.Name, cfg.Reconcile)
 	if err != nil {
 		return nil, err
 	}
@@ -81,8 +86,8 @@ func NewServer(ctx context.Context, cfg *config.Bridge) (*Server, error) {
 
 		uuid: _uuid,
 
-		ticker:   time.NewTicker(cfg.ProbeInterval),
-		executor: executor,
+		reconciler: reconciler,
+		ticker:     time.NewTicker(cfg.ProbeInterval),
 
 		partner:        partner,
 		partnerMonitor: partnerMonitor,
@@ -107,7 +112,7 @@ func NewServer(ctx context.Context, cfg *config.Bridge) (*Server, error) {
 	handler := httplogger.Middleware(l, mux)
 
 	s.server = &http.Server{
-		Addr:              string(cfg.StatusAddr),
+		Addr:              cfg.StatusAddr.String(),
 		ErrorLog:          logutils.NewHttpServerErrorLogger(l),
 		Handler:           handler,
 		MaxHeaderBytes:    1024,
@@ -136,7 +141,7 @@ func NewServer(ctx context.Context, cfg *config.Bridge) (*Server, error) {
 		s.peers[ifsName] = peer
 
 		// transponder
-		tp, err := transponder.New(ifsName, ifs.Addr)
+		tp, err := transponder.New(cfg.Name, ifsName, ifs.Addr)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w",
 				ifsName, err,
@@ -154,13 +159,23 @@ func NewServer(ctx context.Context, cfg *config.Bridge) (*Server, error) {
 		}
 	}
 
+	if cfg.Reconcile.BridgeActivate.Reapply.Enabled() {
+		s.reapply.bridgeActivate = &types.ReapplyStatus{}
+	}
+	if cfg.Reconcile.InterfaceActivate.Reapply.Enabled() {
+		s.reapply.interfaceActivate = &types.ReapplyStatus{}
+	}
+
 	return s, nil
 }
 
 func (s *Server) Run(ctx context.Context, failureSink chan<- error) {
-	l := logutils.LoggerFromContext(ctx)
+	l := logutils.LoggerFromContext(ctx).With(
+		zap.String("bridge_name", s.cfg.Name),
+	)
+	ctx = logutils.ContextWithLogger(ctx, l)
 
-	s.executor.Run(ctx, failureSink)
+	s.reconciler.Run(ctx, failureSink)
 
 	s.runEventLoop(ctx, failureSink)
 
@@ -171,14 +186,11 @@ func (s *Server) Run(ctx context.Context, failureSink chan<- error) {
 	go func() {
 		l.Info("VPN HA-monitor bridge server is going up...",
 			zap.String("bridge_listen_address", s.server.Addr),
-			zap.String("bridge_name", s.cfg.Name),
 		)
 		if err := s.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			failureSink <- err
 		}
-		l.Info("VPN HA-monitor bridge server is down",
-			zap.String("bridge_name", s.cfg.Name),
-		)
+		l.Info("VPN HA-monitor bridge server is down")
 	}()
 
 	go func() {
@@ -189,9 +201,12 @@ func (s *Server) Run(ctx context.Context, failureSink chan<- error) {
 }
 
 func (s *Server) Stop(ctx context.Context) {
-	l := logutils.LoggerFromContext(ctx)
+	l := logutils.LoggerFromContext(ctx).With(
+		zap.String("bridge_name", s.cfg.Name),
+	)
+	ctx = logutils.ContextWithLogger(ctx, l)
 
-	s.executor.Stop(ctx)
+	s.reconciler.Stop(ctx)
 
 	s.stopEventLoop(ctx)
 
@@ -206,7 +221,6 @@ func (s *Server) Stop(ctx context.Context) {
 	if err := s.server.Shutdown(ctx); err != nil {
 		l.Error("VPN HA-monitor bridge server shutdown failed",
 			zap.Error(err),
-			zap.String("bridge_name", s.cfg.Name),
 		)
 	}
 }

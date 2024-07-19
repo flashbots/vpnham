@@ -12,10 +12,7 @@ import (
 func (s *Server) eventTunnelInterfaceWentDown(ctx context.Context, e *event.TunnelInterfaceWentDown, _ chan<- error) {
 	l := logutils.LoggerFromContext(ctx)
 
-	l.Info("Tunnel interface went down",
-		zap.String("bridge_name", s.cfg.Name),
-		zap.String("tunnel_interface", e.EvtTunnelInterface()),
-	)
+	l.Info("Tunnel interface going down...")
 
 	s.deriveBridgeEvents(e)
 
@@ -64,10 +61,7 @@ func (s *Server) eventTunnelInterfaceWentDown(ctx context.Context, e *event.Tunn
 func (s *Server) eventTunnelInterfaceWentUp(ctx context.Context, e *event.TunnelInterfaceWentUp, _ chan<- error) {
 	l := logutils.LoggerFromContext(ctx)
 
-	l.Info("Tunnel interface went up",
-		zap.String("bridge_name", s.cfg.Name),
-		zap.String("tunnel_interface", e.EvtTunnelInterface()),
-	)
+	l.Info("Tunnel interface going up...")
 
 	s.deriveBridgeEvents(e)
 
@@ -141,24 +135,40 @@ func (s *Server) eventTunnelInterfaceWentUp(ctx context.Context, e *event.Tunnel
 	}
 }
 
-func (s *Server) eventTunnelInterfaceDeactivated(ctx context.Context, e *event.TunnelInterfaceDeactivated, _ chan<- error) {
+func (s *Server) eventTunnelInterfaceDeactivated(ctx context.Context, e *event.TunnelInterfaceDeactivated, failureSink chan<- error) {
 	l := logutils.LoggerFromContext(ctx)
 
-	l.Info("Tunnel interface deactivated",
-		zap.String("bridge_name", s.cfg.Name),
-		zap.String("tunnel_interface", e.EvtTunnelInterface()),
-	)
+	l.Info("Tunnel interface deactivating...")
 
-	s.executor.ExecuteInterfaceDeactivate(ctx, e)
+	s.reconciler.InterfaceDeactivate(ctx, e, failureSink)
 }
 
-func (s *Server) eventTunnelInterfaceActivated(ctx context.Context, e *event.TunnelInterfaceActivated, _ chan<- error) {
+func (s *Server) eventTunnelInterfaceActivated(ctx context.Context, e *event.TunnelInterfaceActivated, failureSink chan<- error) {
 	l := logutils.LoggerFromContext(ctx)
 
-	l.Info("Tunnel interface activated",
-		zap.String("bridge_name", s.cfg.Name),
-		zap.String("tunnel_interface", e.EvtTunnelInterface()),
+	l.Info("Tunnel interface activating...")
+
+	s.reconciler.InterfaceActivate(ctx, e, failureSink)
+
+	if r := s.cfg.Reconcile.InterfaceActivate.Reapply; r.Enabled() {
+		ia := s.reapply.interfaceActivate
+		ia.Count = 0
+		ia.Next = e.Timestamp.Add(r.InitialDelay)
+	}
+}
+
+func (s *Server) eventTunnelInterfaceReactivated(ctx context.Context, e *event.TunnelInterfaceReactivated, failureSink chan<- error) {
+	l := logutils.LoggerFromContext(ctx)
+
+	l.Info("Tunnel interface reactivating...",
+		zap.Int("iteration", e.Iteration),
 	)
 
-	s.executor.ExecuteInterfaceActivate(ctx, e)
+	s.reconciler.InterfaceActivate(ctx, e, failureSink)
+
+	if r := s.cfg.Reconcile.InterfaceActivate.Reapply; r.Enabled() {
+		ia := s.reapply.interfaceActivate
+		ia.Count++
+		ia.Next = e.Timestamp.Add(r.DelayOnIteration(ia.Count))
+	}
 }

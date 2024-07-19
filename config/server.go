@@ -1,101 +1,45 @@
 package config
 
 import (
+	"context"
 	"fmt"
 )
 
 type Server struct {
-	Bridges        map[string]*Bridge `yaml:"bridges"`
-	DefaultScripts *Scripts           `yaml:"default_scripts"`
-	Metrics        *Metrics           `yaml:"metrics"`
+	Bridges map[string]*Bridge `yaml:"bridges"`
+	Metrics *Metrics           `yaml:"metrics"`
 }
 
-func (s *Server) PostLoad() {
-	{ // bridges
-		for bn, b := range s.Bridges {
-			b.Name = bn
+func (s *Server) PostLoad(ctx context.Context) error {
+	// bridges
 
-			if b.PartnerStatusTimeout == 0 {
-				b.PartnerStatusTimeout = DefaultPartnerStatusTimeout
-			}
+	for bn, b := range s.Bridges {
+		b.Name = bn
 
-			if b.ProbeInterval == 0 {
-				b.ProbeInterval = DefaultProbeInterval
-			}
-
-			if b.PartnerStatusThresholdDown == 0 {
-				b.PartnerStatusThresholdDown = DefaultThresholdDown
-			}
-
-			if b.PartnerStatusThresholdUp == 0 {
-				b.PartnerStatusThresholdUp = DefaultThresholdUp
-			}
-
-			{ // interfaces
-				for ifsName, ifs := range b.TunnelInterfaces {
-					ifs.Name = ifsName
-
-					if ifs.ThresholdDown == 0 {
-						ifs.ThresholdDown = DefaultThresholdDown
-					}
-
-					if ifs.ThresholdUp == 0 {
-						ifs.ThresholdUp = DefaultThresholdUp
-					}
-				}
-			}
-
-			{ // scripts
-				if b.Scripts == nil {
-					b.Scripts = &Scripts{}
-				}
-				if b.Scripts.BridgeActivate == nil {
-					if s.DefaultScripts != nil {
-						b.Scripts.BridgeActivate = s.DefaultScripts.BridgeActivate
-					}
-				}
-				if b.Scripts.InterfaceActivate == nil {
-					if s.DefaultScripts != nil {
-						b.Scripts.InterfaceActivate = s.DefaultScripts.InterfaceActivate
-					}
-				}
-				if b.Scripts.InterfaceDeactivate == nil {
-					if s.DefaultScripts != nil {
-						b.Scripts.InterfaceDeactivate = s.DefaultScripts.InterfaceDeactivate
-					}
-				}
-				if b.ScriptsTimeout == 0 {
-					b.ScriptsTimeout = DefaultScriptsTimeout
-				}
-			}
+		if err := b.PostLoad(ctx); err != nil {
+			return err
 		}
 	}
 
-	{ // metrics
-		if s.Metrics.ListenAddr == "" {
-			s.Metrics.ListenAddr = DefaultMetricsListenAddr
-		}
+	// metrics
 
-		if s.Metrics.LatencyBucketsCount == 0 {
-			s.Metrics.LatencyBucketsCount = DefaultLatencyBucketsCount
-		}
-
-		if s.Metrics.MaxLatencyUs == 0 {
-			s.Metrics.MaxLatencyUs = DefaultMaxLatencyUs
-		}
+	if err := s.Metrics.PostLoad(ctx); err != nil {
+		return err
 	}
+
+	return nil
 }
 
-func (s *Server) Validate() error {
+func (s *Server) Validate(ctx context.Context) error {
 	for name, bridge := range s.Bridges {
-		if err := bridge.Validate(); err != nil {
+		if err := bridge.Validate(ctx); err != nil {
 			return fmt.Errorf("%s: %w",
 				name, err,
 			)
 		}
 	}
 
-	if err := s.Metrics.Validate(); err != nil {
+	if err := s.Metrics.Validate(ctx); err != nil {
 		return err
 	}
 

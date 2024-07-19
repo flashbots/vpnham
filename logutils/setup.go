@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/flashbots/vpnham/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -16,11 +15,11 @@ var (
 	errLoggerInvalidMode   = errors.New("invalid log-mode")
 )
 
-func NewLogger(cfg *config.Log) (
+func NewLogger(mode, level string) (
 	*zap.Logger, error,
 ) {
 	var config zap.Config
-	switch strings.ToLower(cfg.Mode) {
+	switch strings.ToLower(mode) {
 	case "dev":
 		config = zap.NewDevelopmentConfig()
 		config.EncoderConfig.EncodeCaller = nil
@@ -28,15 +27,15 @@ func NewLogger(cfg *config.Log) (
 		config = zap.NewProductionConfig()
 	default:
 		return nil, fmt.Errorf("%w: %s",
-			errLoggerInvalidMode, cfg.Mode,
+			errLoggerInvalidMode, mode,
 		)
 	}
 	config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 
-	logLevel, err := zap.ParseAtomicLevel(cfg.Level)
+	logLevel, err := zap.ParseAtomicLevel(level)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s: %w",
-			errLoggerInvalidLevel, cfg.Level, err,
+			errLoggerInvalidLevel, level, err,
 		)
 	}
 	config.Level = logLevel

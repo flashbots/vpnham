@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -26,7 +27,19 @@ var (
 	errTunnelInterfaceStatusThresholdsAreInvalid = errors.New("tunnel interface status thresholds are invalid")
 )
 
-func (ifs TunnelInterface) Validate() error {
+func (ifs *TunnelInterface) PostLoad(ctx context.Context) error {
+	if ifs.ThresholdDown == 0 {
+		ifs.ThresholdDown = DefaultThresholdDown
+	}
+
+	if ifs.ThresholdUp == 0 {
+		ifs.ThresholdUp = DefaultThresholdUp
+	}
+
+	return nil
+}
+
+func (ifs *TunnelInterface) Validate(ctx context.Context) error {
 	if err := ifs.Role.Validate(); err != nil {
 		return fmt.Errorf("%s: %w: %w",
 			ifs.Name, errTunnelInterfaceRoleIsInvalid, err,

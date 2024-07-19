@@ -7,15 +7,12 @@ import (
 	"github.com/flashbots/vpnham/metrics"
 	"go.opentelemetry.io/otel/attribute"
 	otelapi "go.opentelemetry.io/otel/metric"
-	"go.uber.org/zap"
 )
 
 func (s *Server) ObserveMetrics(ctx context.Context, observer otelapi.Observer) error {
 	l := logutils.LoggerFromContext(ctx)
 
-	l.Debug("Observing metrics",
-		zap.String("bridge_name", s.cfg.Name),
-	)
+	l.Debug("Observing metrics")
 
 	s.mxStatus.Lock()
 	defer s.mxStatus.Unlock()
@@ -32,7 +29,7 @@ func (s *Server) ObserveMetrics(ctx context.Context, observer otelapi.Observer) 
 			val++
 		}
 		observer.ObserveInt64(metrics.BridgeActive, val, otelapi.WithAttributes(
-			attribute.String("bridge_name", s.cfg.Name),
+			attribute.String(metrics.LabelBridge, s.cfg.Name),
 		))
 	}
 
@@ -45,7 +42,7 @@ func (s *Server) ObserveMetrics(ctx context.Context, observer otelapi.Observer) 
 			val++
 		}
 		observer.ObserveInt64(metrics.BridgeUp, val, otelapi.WithAttributes(
-			attribute.String("bridge_name", s.cfg.Name),
+			attribute.String(metrics.LabelBridge, s.cfg.Name),
 		))
 	}
 
@@ -56,8 +53,8 @@ func (s *Server) ObserveMetrics(ctx context.Context, observer otelapi.Observer) 
 				val = 1
 			}
 			observer.ObserveInt64(metrics.TunnelInterfaceActive, val, otelapi.WithAttributes(
-				attribute.String("bridge_name", s.cfg.Name),
-				attribute.String("tunnel_interface_name", ifsName),
+				attribute.String(metrics.LabelBridge, s.cfg.Name),
+				attribute.String(metrics.LabelTunnel, ifsName),
 			))
 		}
 
@@ -67,8 +64,8 @@ func (s *Server) ObserveMetrics(ctx context.Context, observer otelapi.Observer) 
 				val = 1
 			}
 			observer.ObserveInt64(metrics.TunnelInterfaceUp, val, otelapi.WithAttributes(
-				attribute.String("bridge_name", s.cfg.Name),
-				attribute.String("tunnel_interface_name", ifsName),
+				attribute.String(metrics.LabelBridge, s.cfg.Name),
+				attribute.String(metrics.LabelTunnel, ifsName),
 			))
 		}
 	}

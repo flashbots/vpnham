@@ -7,7 +7,10 @@ import (
 	"time"
 
 	"github.com/flashbots/vpnham/logutils"
+	"github.com/flashbots/vpnham/metrics"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
+	otelapi "go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 )
 
@@ -37,6 +40,9 @@ func Middleware(logger *zap.Logger, next http.Handler) http.Handler {
 					zap.String("method", method),
 					zap.String("url", url),
 				)
+				metrics.Errors.Add(r.Context(), 1, otelapi.WithAttributes(
+					attribute.String(metrics.LabelErrorScope, metrics.ScopeHTTPMiddleware),
+				))
 			}
 		}()
 

@@ -6,7 +6,10 @@ import (
 
 	"github.com/flashbots/vpnham/event"
 	"github.com/flashbots/vpnham/logutils"
+	"github.com/flashbots/vpnham/metrics"
 	"github.com/flashbots/vpnham/monitor"
+	"go.opentelemetry.io/otel/attribute"
+	otelapi "go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 )
 
@@ -14,24 +17,45 @@ func (s *Server) runEventLoop(ctx context.Context, failureSink chan<- error) {
 	l := logutils.LoggerFromContext(ctx)
 
 	go func() {
-		l.Info("VPN HA-monitor bridge event loop is starting...",
-			zap.String("bridge_name", s.cfg.Name),
-		)
+		l.Info("VPN HA-monitor bridge event loop is starting...")
 
 		for e := range s.events {
+			var ( // use fresh originals on every iteration
+				ctx = ctx
+				l   = l
+			)
+
+			if te, ok := e.(event.TunnelInterfaceEvent); ok {
+				l = l.With(
+					zap.String("tunnel_interface", te.EvtTunnelInterface()),
+				)
+				ctx = logutils.ContextWithLogger(ctx, l)
+			}
+
 			switch e := e.(type) {
+
+			// bridge
+
 			case *event.BridgeActivated:
 				s.eventBridgeActivated(ctx, e, failureSink)
 			case *event.BridgeDeactivated:
 				s.eventBridgeDeactivated(ctx, e, failureSink)
+			case *event.BridgeReactivated:
+				s.eventBridgeReactivated(ctx, e, failureSink)
 			case *event.BridgeWentDown:
 				s.eventBridgeWentDown(ctx, e, failureSink)
 			case *event.BridgeWentUp:
 				s.eventBridgeWentUp(ctx, e, failureSink)
+
+			// connectivity
+
 			case *event.ConnectivityLost:
 				s.eventConnectivityLost(ctx, e, failureSink)
 			case *event.ConnectivityRestored:
 				s.eventConnectivityRestored(ctx, e, failureSink)
+
+			// partner
+
 			case *event.PartnerActivated:
 				s.eventPartnerActivated(ctx, e, failureSink)
 			case *event.PartnerChangedName:
@@ -46,10 +70,15 @@ func (s *Server) runEventLoop(ctx context.Context, failureSink chan<- error) {
 				s.eventPartnerWentDown(ctx, e, failureSink)
 			case *event.PartnerWentUp:
 				s.eventPartnerWentUp(ctx, e, failureSink)
+
+			// tunnel
+
 			case *event.TunnelInterfaceActivated:
 				s.eventTunnelInterfaceActivated(ctx, e, failureSink)
 			case *event.TunnelInterfaceDeactivated:
 				s.eventTunnelInterfaceDeactivated(ctx, e, failureSink)
+			case *event.TunnelInterfaceReactivated:
+				s.eventTunnelInterfaceReactivated(ctx, e, failureSink)
 			case *event.TunnelInterfaceWentDown:
 				s.eventTunnelInterfaceWentDown(ctx, e, failureSink)
 			case *event.TunnelInterfaceWentUp:
@@ -62,17 +91,22 @@ func (s *Server) runEventLoop(ctx context.Context, failureSink chan<- error) {
 				s.eventTunnelProbeSendFailure(ctx, e, failureSink)
 			case *event.TunnelProbeSendSuccess:
 				s.eventTunnelProbeSendSuccess(ctx, e, failureSink)
+
+			// catch-all
+
 			default:
 				l.Error("Unexpected event",
 					zap.String("kind", e.EvtKind()),
 					zap.String("type", reflect.TypeOf(e).String()),
 				)
+				metrics.Errors.Add(ctx, 1, otelapi.WithAttributes(
+					attribute.String(metrics.LabelBridge, s.cfg.Name),
+					attribute.String(metrics.LabelErrorScope, metrics.ScopeInternalLogic),
+				))
 			}
 		}
 
-		l.Info("VPN HA-monitor bridge event loop is stopped",
-			zap.String("bridge_name", s.cfg.Name),
-		)
+		l.Info("VPN HA-monitor bridge event loop is stopped")
 	}()
 }
 

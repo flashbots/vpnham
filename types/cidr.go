@@ -12,6 +12,10 @@ var (
 	errCIDRIsInvalid = errors.New("cidr is invalid")
 )
 
+func (c CIDR) String() string {
+	return string(c)
+}
+
 func (c CIDR) Validate() error {
 	if _, _, err := net.ParseCIDR(string(c)); err != nil {
 		return fmt.Errorf("%w: %w",

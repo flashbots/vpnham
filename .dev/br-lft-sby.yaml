@@ -25,17 +25,20 @@ bridges:
         threshold_down: 4
         threshold_up: 9
 
-    scripts_timeout: 5s
+    reconcile:
+      scripts_timeout: 5s
+
+      bridge_activate:
+        script:
+          - ["sh", "-c", "echo ${proto} ${bridge_interface} ${bridge_interface_ip} ${bridge_peer_cidr}"]
+
+      interface_activate:
+        script:
+          - ["ip", "-${proto}", "route", "replace", "${bridge_peer_cidr}", "dev", "${tunnel_interface}"]
+
+      interface_deactivate:
+        script:
+          - ["ip", "-${proto}", "route", "del", "${bridge_peer_cidr}", "dev", "${tunnel_interface}"]
 
 metrics:
   listen_addr: 0.0.0.0:8001
-
-default_scripts:
-  bridge_activate:
-    - ["sh", "-c", "echo ${proto} ${bridge_interface} ${bridge_interface_ip} ${bridge_peer_cidr}"]
-
-  interface_activate:
-    - ["sh", "-c", "echo 'activate ${proto} ${tunnel_interface} ${tunnel_interface_ip}'"]
-
-  interface_deactivate:
-    - ["sh", "-c", "echo 'deactivate ${proto} ${tunnel_interface} ${tunnel_interface_ip}'"]

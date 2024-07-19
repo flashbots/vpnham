@@ -44,6 +44,8 @@ services:
       - type: bind
         source: ./.dev/br-lft-act.yaml
         target: /app/.vpnham.yaml
+    cap_add:
+      - NET_ADMIN
     networks:
       net0:
         ipv4_address: 10.0.0.2
@@ -64,6 +66,8 @@ services:
         target: /app/.vpnham.yaml
     ports:
       - 8001:8001
+    cap_add:
+      - NET_ADMIN
     networks:
       net0:
         ipv4_address: 10.0.0.3
@@ -84,6 +88,8 @@ services:
       - type: bind
         source: ./.dev/br-rgt-act.yaml
         target: /app/.vpnham.yaml
+    cap_add:
+      - NET_ADMIN
     networks:
       net1:
         ipv4_address: 10.1.0.2
@@ -104,6 +110,8 @@ services:
       - type: bind
         source: ./.dev/br-rgt-sby.yaml
         target: /app/.vpnham.yaml
+    cap_add:
+      - NET_ADMIN
     networks:
       net1:
         ipv4_address: 10.1.0.3

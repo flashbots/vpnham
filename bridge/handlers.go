@@ -10,8 +10,11 @@ import (
 	"time"
 
 	"github.com/flashbots/vpnham/logutils"
+	"github.com/flashbots/vpnham/metrics"
 	"github.com/flashbots/vpnham/transponder"
 	"github.com/flashbots/vpnham/types"
+	"go.opentelemetry.io/otel/attribute"
+	otelapi "go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 )
 
@@ -28,17 +31,23 @@ func (s *Server) handleStatus(
 
 	defer r.Body.Close()
 	if _, err := io.ReadAll(r.Body); err != nil {
-		l.Warn("Failed to read request body",
+		l.Error("Failed to read request body",
 			zap.Error(err),
-			zap.String("bridge_name", s.cfg.Name),
 		)
+		metrics.Errors.Add(r.Context(), 1, otelapi.WithAttributes(
+			attribute.String(metrics.LabelBridge, s.cfg.Name),
+			attribute.String(metrics.LabelErrorScope, metrics.ScopeStatusListener),
+		))
 	}
 
 	if r.Method != http.MethodGet {
-		l.Warn("Unexpected status request method",
-			zap.String("bridge_name", s.cfg.Name),
+		l.Error("Unexpected status request method",
 			zap.String("method", r.Method),
 		)
+		metrics.Errors.Add(r.Context(), 1, otelapi.WithAttributes(
+			attribute.String(metrics.LabelBridge, s.cfg.Name),
+			attribute.String(metrics.LabelErrorScope, metrics.ScopeStatusListener),
+		))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -49,10 +58,14 @@ func (s *Server) handleStatus(
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("content-type", "application/json")
 	if err := json.NewEncoder(w).Encode(s.status); err != nil {
-		l.Warn("Failed to encode and send response body",
+		l.Error("Failed to encode and send response body",
 			zap.Error(err),
-			zap.String("bridge_name", s.cfg.Name),
 		)
+		metrics.Errors.Add(r.Context(), 1, otelapi.WithAttributes(
+			attribute.String(metrics.LabelBridge, s.cfg.Name),
+			attribute.String(metrics.LabelErrorScope, metrics.ScopeStatusListener),
+		))
+		return
 	}
 }
 
@@ -65,7 +78,6 @@ func (s *Server) handleProbe(
 	l := logutils.LoggerFromContext(ctx)
 
 	l.Debug("Received probe",
-		zap.String("bridge_name", s.cfg.Name),
 		zap.String("src_uuid", probe.SrcUUID.String()),
 		zap.String("tunnel_interface", tp.InterfaceName()),
 		zap.Time("dst_timestamp", probe.DstTimestamp),
@@ -94,12 +106,12 @@ func (s *Server) handleTick(
 ) {
 	l := logutils.LoggerFromContext(ctx)
 
-	l.Debug("Handling timer tick",
-		zap.String("bridge_name", s.cfg.Name),
+	l.Debug("Handling bridge timer tick",
 		zap.Time("tick", ts),
 	)
 
 	s.sendProbes(ctx, failureSink)
 	s.detectMissedProbes(ctx, failureSink)
 	s.pollPartnerBridge(ctx, failureSink)
+	s.reapplyUpdates(ctx, failureSink)
 }

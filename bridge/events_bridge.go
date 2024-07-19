@@ -12,9 +12,7 @@ import (
 func (s *Server) eventBridgeWentDown(ctx context.Context, e *event.BridgeWentDown, _ chan<- error) {
 	l := logutils.LoggerFromContext(ctx)
 
-	l.Info("Bridge went down",
-		zap.String("bridge_name", s.cfg.Name),
-	)
+	l.Info("Bridge going down...")
 
 	s.mxStatus.Lock()
 	defer s.mxStatus.Unlock()
@@ -41,9 +39,7 @@ func (s *Server) eventBridgeWentDown(ctx context.Context, e *event.BridgeWentDow
 func (s *Server) eventBridgeWentUp(ctx context.Context, e *event.BridgeWentUp, _ chan<- error) {
 	l := logutils.LoggerFromContext(ctx)
 
-	l.Info("Bridge went up",
-		zap.String("bridge_name", s.cfg.Name),
-	)
+	l.Info("Bridge going up...")
 
 	s.mxStatus.Lock()
 	defer s.mxStatus.Unlock()
@@ -84,17 +80,35 @@ func (s *Server) eventBridgeWentUp(ctx context.Context, e *event.BridgeWentUp, _
 func (s *Server) eventBridgeDeactivated(ctx context.Context, _ *event.BridgeDeactivated, _ chan<- error) {
 	l := logutils.LoggerFromContext(ctx)
 
-	l.Info("Bridge deactivated",
-		zap.String("bridge_name", s.cfg.Name),
-	)
+	l.Info("Bridge deactivated")
 }
 
-func (s *Server) eventBridgeActivated(ctx context.Context, e *event.BridgeActivated, _ chan<- error) {
+func (s *Server) eventBridgeActivated(ctx context.Context, e *event.BridgeActivated, failureSink chan<- error) {
 	l := logutils.LoggerFromContext(ctx)
 
-	l.Info("Bridge activated",
-		zap.String("bridge_name", s.cfg.Name),
+	l.Info("Bridge activating...")
+
+	s.reconciler.BridgeActivate(ctx, e, failureSink)
+
+	if r := s.cfg.Reconcile.BridgeActivate.Reapply; r.Enabled() {
+		ba := s.reapply.bridgeActivate
+		ba.Count = 0
+		ba.Next = e.Timestamp.Add(r.InitialDelay)
+	}
+}
+
+func (s *Server) eventBridgeReactivated(ctx context.Context, e *event.BridgeReactivated, failureSink chan<- error) {
+	l := logutils.LoggerFromContext(ctx)
+
+	l.Info("Bridge reactivating...",
+		zap.Int("iteration", e.Iteration),
 	)
 
-	s.executor.ExecuteBridgeActivate(ctx, e)
+	s.reconciler.BridgeActivate(ctx, e, failureSink)
+
+	if r := s.cfg.Reconcile.BridgeActivate.Reapply; r.Enabled() {
+		ba := s.reapply.bridgeActivate
+		ba.Count++
+		ba.Next = e.Timestamp.Add(r.DelayOnIteration(ba.Count))
+	}
 }

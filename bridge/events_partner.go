@@ -56,9 +56,7 @@ func (s *Server) eventPartnerPollSuccess(_ context.Context, e *event.PartnerPoll
 func (s *Server) eventPartnerWentDown(ctx context.Context, e *event.PartnerWentDown, _ chan<- error) {
 	l := logutils.LoggerFromContext(ctx)
 
-	l.Info("Partner went down",
-		zap.String("bridge_name", s.cfg.Name),
-	)
+	l.Info("Partner went down")
 
 	s.mxStatus.Lock()
 	defer s.mxStatus.Unlock()
@@ -87,9 +85,7 @@ func (s *Server) eventPartnerWentDown(ctx context.Context, e *event.PartnerWentD
 func (s *Server) eventPartnerWentUp(ctx context.Context, e *event.PartnerWentUp, _ chan<- error) {
 	l := logutils.LoggerFromContext(ctx)
 
-	l.Info("Partner went up",
-		zap.String("bridge_name", s.cfg.Name),
-	)
+	l.Info("Partner went up")
 
 	s.mxStatus.Lock()
 	defer s.mxStatus.Unlock()
@@ -106,17 +102,13 @@ func (s *Server) eventPartnerWentUp(ctx context.Context, e *event.PartnerWentUp,
 func (s *Server) eventPartnerDeactivated(ctx context.Context, _ *event.PartnerDeactivated, _ chan<- error) {
 	l := logutils.LoggerFromContext(ctx)
 
-	l.Info("Partner deactivated",
-		zap.String("bridge_name", s.cfg.Name),
-	)
+	l.Info("Partner deactivated")
 }
 
 func (s *Server) eventPartnerActivated(ctx context.Context, _ *event.PartnerActivated, _ chan<- error) {
 	l := logutils.LoggerFromContext(ctx)
 
-	logFields := []zapcore.Field{
-		zap.String("bridge_name", s.cfg.Name),
-	}
+	logFields := []zapcore.Field{}
 	if s.partnerStatus != nil {
 		logFields = append(logFields, zap.String("partner_name", s.partnerStatus.Name))
 	}

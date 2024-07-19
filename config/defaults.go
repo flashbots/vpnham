@@ -16,7 +16,10 @@ const (
 
 	DefaultScriptsTimeout = 30 * time.Second
 
-	DefaultMetricsListenAddr   = "0.0.0.0:8000"
+	DefaultMetricsListenAddr = "0.0.0.0:8000"
+
 	DefaultLatencyBucketsCount = 33      // from 1us to 1s
 	DefaultMaxLatencyUs        = 1000000 // 1s
+
+	DefaultReapplyFactor = 2.0
 )

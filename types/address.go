@@ -16,6 +16,10 @@ var (
 	errAddressMissingPort = errors.New("missing port")
 )
 
+func (a Address) String() string {
+	return string(a)
+}
+
 func (a Address) Parse() (ip net.IP, port int, err error) {
 	parts := strings.Split(string(a), ":")
 	if len(parts) == 1 {

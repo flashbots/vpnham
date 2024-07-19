@@ -57,7 +57,7 @@ func main() {
 
 		Before: func(_ *cli.Context) error {
 			// setup logger
-			l, err := logutils.NewLogger(cfg.Log)
+			l, err := logutils.NewLogger(cfg.Log.Mode, cfg.Log.Level)
 			if err != nil {
 				return err
 			}

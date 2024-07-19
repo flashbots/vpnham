@@ -4,6 +4,8 @@ import (
 	otelapi "go.opentelemetry.io/otel/metric"
 )
 
+// Bridge
+
 var (
 	// BridgeActive is a number of active bridges at a given moment
 	BridgeActive otelapi.Int64Observable
@@ -20,6 +22,8 @@ var (
 	TunnelInterfaceUp otelapi.Int64Observable
 )
 
+// Probes
+
 var (
 	// ProbesSent is a counter for the sent probes
 	ProbesSent otelapi.Int64Counter
@@ -35,4 +39,11 @@ var (
 
 	// ProbesLatencyReturn is the latency of probes on the way back
 	ProbesLatencyReturn otelapi.Float64Histogram
+)
+
+// Errors
+
+var (
+	// Errors is a counter for the errors
+	Errors otelapi.Int64Counter
 )
