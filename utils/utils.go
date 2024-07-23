@@ -1,9 +1,11 @@
 package utils
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
+	"time"
 )
 
 var (
@@ -59,4 +61,24 @@ func GetInterfaceIP(name string, ipv4 bool) (string, error) {
 		}
 		return ipv6s[0], nil
 	}
+}
+
+func WithTimeout(
+	ctx context.Context,
+	timeout time.Duration,
+	do func(context.Context) error,
+) error {
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	start := time.Now()
+	err := do(ctx)
+	duration := time.Since(start)
+
+	if ctx.Err() == context.DeadlineExceeded {
+		err = fmt.Errorf("timed out after %v: %w", duration, err)
+	}
+
+	return err
 }

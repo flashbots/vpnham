@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/flashbots/vpnham/event"
+	"github.com/flashbots/vpnham/job"
 	"github.com/flashbots/vpnham/logutils"
 	"github.com/flashbots/vpnham/metrics"
 	"go.opentelemetry.io/otel/attribute"
@@ -35,8 +36,9 @@ func (r *Reconciler) InterfaceDeactivate(
 		return
 	}
 
-	r.scheduleJob(job{
-		name:   "interface_deactivate",
-		script: r.renderScript(&r.cfg.InterfaceDeactivate.Script, placeholders),
-	})
+	r.scheduleJob(job.RunScript(
+		"interface_deactivate",
+		r.cfg.ScriptsTimeout,
+		r.renderScript(&r.cfg.BridgeActivate.Script, placeholders),
+	))
 }

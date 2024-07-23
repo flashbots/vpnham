@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/flashbots/vpnham/event"
+	"github.com/flashbots/vpnham/job"
 	"github.com/flashbots/vpnham/logutils"
 	"github.com/flashbots/vpnham/metrics"
 	"go.opentelemetry.io/otel/attribute"
@@ -53,8 +54,9 @@ func (r *Reconciler) interfaceActivateRunScript(
 		return
 	}
 
-	r.scheduleJob(job{
-		name:   "interface_activate",
-		script: r.renderScript(&r.cfg.InterfaceActivate.Script, placeholders),
-	})
+	r.scheduleJob(job.RunScript(
+		"interface_activate",
+		r.cfg.ScriptsTimeout,
+		r.renderScript(&r.cfg.InterfaceActivate.Script, placeholders),
+	))
 }

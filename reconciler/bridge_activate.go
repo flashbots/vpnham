@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/flashbots/vpnham/aws"
 	"github.com/flashbots/vpnham/event"
+	"github.com/flashbots/vpnham/job"
 	"github.com/flashbots/vpnham/logutils"
 	"github.com/flashbots/vpnham/metrics"
 	"go.opentelemetry.io/otel/attribute"
@@ -42,36 +42,15 @@ func (r *Reconciler) bridgeActivateUpdateAWS(
 		l.Debug("No bridge activation AWS configuration provided; skipping...")
 		return
 	}
+	aws := r.cfg.BridgeActivate.AWS
 
-	cli, err := aws.NewClient(ctx)
-	if err != nil {
-		l.Error("Failed to update AWS",
-			zap.Error(err),
-		)
-		metrics.Errors.Add(ctx, 1, otelapi.WithAttributes(
-			attribute.String(metrics.LabelBridge, r.name),
-			attribute.String(metrics.LabelErrorScope, metrics.ScopeAWS),
-		))
-		return
-	}
-
-	cidr := e.EvtBridgePeerCIDR().String()
-	networkInterfaceID := r.cfg.BridgeActivate.AWS.NetworkInterfaceID
-
-	for _, rt := range r.cfg.BridgeActivate.AWS.RouteTables {
-		err := cli.UpdateRouteTable(ctx, rt, cidr, networkInterfaceID)
-		if err != nil {
-			l.Error("Failed to update AWS route table",
-				zap.Error(err),
-				zap.String("network_interface_id", networkInterfaceID),
-				zap.String("route_table", rt),
-			)
-			metrics.Errors.Add(ctx, 1, otelapi.WithAttributes(
-				attribute.String(metrics.LabelBridge, r.name),
-				attribute.String(metrics.LabelErrorScope, metrics.ScopeAWS),
-			))
-		}
-	}
+	r.scheduleJob(job.UpdateAWSRouteTables(
+		"aws_update_route_tables",
+		aws.Timeout,
+		e.EvtBridgePeerCIDR().String(),
+		aws.NetworkInterfaceID,
+		aws.RouteTables,
+	))
 }
 
 func (r *Reconciler) bridgeActivateRunScript(
@@ -97,8 +76,9 @@ func (r *Reconciler) bridgeActivateRunScript(
 		return
 	}
 
-	r.scheduleJob(job{
-		name:   "bridge_activate",
-		script: r.renderScript(&r.cfg.BridgeActivate.Script, placeholders),
-	})
+	r.scheduleJob(job.RunScript(
+		"bridge_activate",
+		r.cfg.ScriptsTimeout,
+		r.renderScript(&r.cfg.BridgeActivate.Script, placeholders),
+	))
 }

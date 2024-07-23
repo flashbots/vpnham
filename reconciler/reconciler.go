@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/flashbots/vpnham/config"
+	"github.com/flashbots/vpnham/job"
 	"github.com/flashbots/vpnham/logutils"
 )
 
@@ -13,10 +14,10 @@ type Reconciler struct {
 
 	cfg *config.Reconcile
 
-	queue   []job
+	queue   []job.Job
 	mxQueue sync.Mutex
 
-	next chan job
+	next chan job.Job
 	stop chan struct{}
 }
 
@@ -26,9 +27,9 @@ func New(name string, cfg *config.Reconcile) (*Reconciler, error) {
 
 		cfg: cfg,
 
-		queue: make([]job, 0, 1),
+		queue: make([]job.Job, 0, 1),
 
-		next: make(chan job),
+		next: make(chan job.Job),
 		stop: make(chan struct{}, 1),
 	}
 

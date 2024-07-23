@@ -36,33 +36,7 @@ func (cli *Client) RouteTableExists(ctx context.Context, routeTable string) (boo
 	return true, nil
 }
 
-func (cli *Client) UpdateRouteTable(
-	ctx context.Context,
-	routeTable string,
-	cidr string,
-	networkInterfaceID string,
-) error {
-	// check if the route is already set
-	route, err := cli.findRoute(ctx, routeTable, cidr)
-	if err != nil {
-		return err
-	}
-
-	if route != nil && aws.ToString(route.NetworkInterfaceId) == networkInterfaceID {
-		// route is already up to date
-		return nil
-	}
-
-	if route != nil {
-		// route exists but with different next hop
-		return cli.updateRoute(ctx, routeTable, cidr, networkInterfaceID)
-	}
-
-	// no route yet
-	return cli.createRoute(ctx, routeTable, cidr, networkInterfaceID)
-}
-
-func (cli *Client) findRoute(
+func (cli *Client) FindRoute(
 	ctx context.Context,
 	routeTable string,
 	cidr string,
@@ -100,7 +74,7 @@ func (cli *Client) findRoute(
 	return nil, nil
 }
 
-func (cli *Client) updateRoute(
+func (cli *Client) UpdateRoute(
 	ctx context.Context,
 	routeTable string,
 	cidr string,
@@ -130,7 +104,7 @@ func (cli *Client) updateRoute(
 	return err
 }
 
-func (cli *Client) createRoute(
+func (cli *Client) CreateRoute(
 	ctx context.Context,
 	routeTable string,
 	cidr string,

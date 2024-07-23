@@ -2,26 +2,17 @@ package reconciler
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"os/exec"
-	"strings"
 	"time"
 
+	"github.com/flashbots/vpnham/job"
 	"github.com/flashbots/vpnham/logutils"
-	"github.com/flashbots/vpnham/types"
 	"go.uber.org/zap"
 )
-
-type job struct {
-	name   string
-	script *types.Script
-}
 
 func (r *Reconciler) runLoop(
 	ctx context.Context,
 ) {
-	exhaust := make(chan job, 1)
+	exhaust := make(chan job.Job, 1)
 
 	for {
 		select {
@@ -43,7 +34,7 @@ func (r *Reconciler) runLoop(
 }
 
 func (r *Reconciler) scheduleJob(
-	job job,
+	job job.Job,
 ) {
 	r.mxQueue.Lock()
 	defer r.mxQueue.Unlock()
@@ -58,50 +49,24 @@ func (r *Reconciler) scheduleJob(
 
 func (r *Reconciler) executeJob(
 	ctx context.Context,
-	job job,
+	job job.Job,
 ) {
 	l := logutils.LoggerFromContext(ctx)
 
-	for step, _cmd := range *job.script {
-		if len(_cmd) == 0 {
-			continue
-		}
+	start := time.Now()
+	err := job.Execute(ctx)
+	duration := time.Since(start)
 
-		strCmd := strings.Join(_cmd, " ")
-
-		l.Debug("Executing command",
-			zap.String("command", strCmd),
-		)
-
-		ctx, cancel := context.WithTimeout(ctx, r.cfg.ScriptsTimeout)
-		defer cancel()
-
-		start := time.Now()
-		cmd := exec.CommandContext(ctx, _cmd[0], _cmd[1:]...)
-		duration := time.Since(start)
-
-		stdout := &strings.Builder{}
-		stderr := &strings.Builder{}
-
-		cmd.Env = os.Environ()
-		cmd.Stderr = stderr
-		cmd.Stdout = stdout
-
-		err := cmd.Run()
-		if ctx.Err() == context.DeadlineExceeded {
-			err = fmt.Errorf("timed out after %v: %w", time.Since(start), err)
-		}
-
-		l.Info("Executed command",
-			zap.String("script", job.name),
-			zap.Int("step", step),
-			zap.String("command", strCmd),
+	if err == nil {
+		l.Info("Executed job",
 			zap.Int64("duration_us", duration.Microseconds()),
-
-			zap.String("stderr", strings.TrimSpace(stderr.String())),
-			zap.String("stdout", strings.TrimSpace(stdout.String())),
-
+			zap.String("job_name", job.Name()),
+		)
+	} else {
+		l.Error("Failed job",
 			zap.Error(err),
+			zap.Int64("duration_us", duration.Microseconds()),
+			zap.String("job_name", job.Name()),
 		)
 	}
 }

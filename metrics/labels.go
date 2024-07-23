@@ -11,7 +11,6 @@ const (
 )
 
 const (
-	ScopeAWS            = "aws"
 	ScopeHTTPMiddleware = "http_middleware"
 	ScopeInternalLogic  = "internal_logic"
 	ScopePartnerPolling = "partner_polling"

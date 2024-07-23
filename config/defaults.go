@@ -14,6 +14,7 @@ const (
 	DefaultThresholdDown = 5
 	DefaultThresholdUp   = 2
 
+	DefaultAWSTimeout     = 15 * time.Second
 	DefaultScriptsTimeout = 30 * time.Second
 
 	DefaultMetricsListenAddr = "0.0.0.0:8000"

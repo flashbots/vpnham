@@ -56,7 +56,7 @@ func (r *Reconciler) renderPlaceholders(e event.Event) (map[string]string, error
 func (r *Reconciler) renderScript(
 	source *types.Script,
 	params map[string]string,
-) *types.Script {
+) types.Script {
 	resScript := make(types.Script, 0, len(*source))
 	for _, cmd := range *source {
 		resCmd := make(types.Command, 0, len(cmd))
@@ -70,5 +70,5 @@ func (r *Reconciler) renderScript(
 		resScript = append(resScript, resCmd)
 	}
 
-	return &resScript
+	return resScript
 }
