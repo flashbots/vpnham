@@ -42,14 +42,14 @@ func (s *Server) eventTunnelProbeReturnSuccess(ctx context.Context, e *event.Tun
 		attribute.String(metrics.LabelTunnel, e.TunnelInterface),
 	))
 
-	metrics.ProbesLatencyForward.Record(ctx, float64(e.LatencyForward.Milliseconds()), otelapi.WithAttributes(
+	metrics.ProbesLatencyForward.Record(ctx, float64(e.LatencyForward.Microseconds()), otelapi.WithAttributes(
 		attribute.String(metrics.LabelBridge, s.cfg.Name),
 		attribute.String(metrics.LabelTunnel, e.TunnelInterface),
 		attribute.String(metrics.LabelProbeDst, e.Location),
 		attribute.String(metrics.LabelProbeSrc, s.cfg.ProbeLocation.String()),
 	))
 
-	metrics.ProbesLatencyReturn.Record(ctx, float64(e.LatencyReturn.Milliseconds()), otelapi.WithAttributes(
+	metrics.ProbesLatencyReturn.Record(ctx, float64(e.LatencyReturn.Microseconds()), otelapi.WithAttributes(
 		attribute.String(metrics.LabelBridge, s.cfg.Name),
 		attribute.String(metrics.LabelTunnel, e.TunnelInterface),
 		attribute.String(metrics.LabelProbeDst, s.cfg.ProbeLocation.String()),

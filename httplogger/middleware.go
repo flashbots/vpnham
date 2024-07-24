@@ -21,8 +21,8 @@ func Middleware(logger *zap.Logger, next http.Handler) http.Handler {
 		httpRequestID := base64.RawStdEncoding.EncodeToString(_uuid[:])
 
 		l := logger.With(
-			zap.String("httpRequestID", httpRequestID),
-			zap.String("logType", "activity"),
+			zap.String("http_request_id", httpRequestID),
+			zap.String("log_type", "activity"),
 		)
 		r = logutils.RequestWithLogger(r, l)
 
@@ -53,13 +53,13 @@ func Middleware(logger *zap.Logger, next http.Handler) http.Handler {
 		// Passing request stats both in-message (for the human reader)
 		// as well as inside the structured log (for the machine parser)
 		logger.Debug(fmt.Sprintf("%s %s %d", r.Method, r.URL.EscapedPath(), wrapped.Status()),
-			zap.Int("durationMs", int(time.Since(start).Milliseconds())),
+			zap.Int("duration_ms", int(time.Since(start).Milliseconds())),
 			zap.Int("status", wrapped.Status()),
-			zap.String("httpRequestID", httpRequestID),
-			zap.String("logType", "access"),
+			zap.String("http_request_id", httpRequestID),
+			zap.String("log_type", "access"),
 			zap.String("method", r.Method),
 			zap.String("path", r.URL.EscapedPath()),
-			zap.String("userAgent", r.Header.Get("user-agent")),
+			zap.String("user_agent", r.Header.Get("user-agent")),
 		)
 	})
 }
