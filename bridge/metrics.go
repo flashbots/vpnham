@@ -23,23 +23,17 @@ func (s *Server) ObserveMetrics(ctx context.Context, observer otelapi.Observer) 
 	{ // bridge_active
 		var val int64 = 0
 		if s.status.Active {
-			val++
-		}
-		if s.partnerStatus != nil && s.partnerStatus.Active {
-			val++
+			val = 1
 		}
 		observer.ObserveInt64(metrics.BridgeActive, val, otelapi.WithAttributes(
 			attribute.String(metrics.LabelBridge, s.cfg.Name),
 		))
 	}
 
-	{ // bridge_active
+	{ // bridge_up
 		var val int64 = 0
 		if s.status.Up {
-			val++
-		}
-		if s.partnerStatus != nil && s.partnerStatus.Up {
-			val++
+			val = 1
 		}
 		observer.ObserveInt64(metrics.BridgeUp, val, otelapi.WithAttributes(
 			attribute.String(metrics.LabelBridge, s.cfg.Name),

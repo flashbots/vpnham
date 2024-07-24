@@ -101,7 +101,7 @@ func setupLatencyBoundariesUs(ctx context.Context, cfg *config.Metrics) error {
 
 func setupBridgeActive(ctx context.Context, _ *config.Metrics) error {
 	bridgeActive, err := meter.Int64ObservableGauge("bridge_active",
-		otelapi.WithDescription("number of active bridges at a given moment"),
+		otelapi.WithDescription("indicates whether the bridge is currently active"),
 	)
 	if err != nil {
 		return err
@@ -112,7 +112,7 @@ func setupBridgeActive(ctx context.Context, _ *config.Metrics) error {
 
 func setupBridgeUp(ctx context.Context, _ *config.Metrics) error {
 	bridgeUp, err := meter.Int64ObservableGauge("bridge_up",
-		otelapi.WithDescription("number of online bridges at a given moment"),
+		otelapi.WithDescription("indicates whether the bridge is currently up"),
 	)
 	if err != nil {
 		return err
@@ -123,7 +123,7 @@ func setupBridgeUp(ctx context.Context, _ *config.Metrics) error {
 
 func setupTunnelInterfaceActive(ctx context.Context, _ *config.Metrics) error {
 	tunnelInterfaceActive, err := meter.Int64ObservableGauge("tunnel_interface_active",
-		otelapi.WithDescription("number of active tunnel interfaces at a given moment"),
+		otelapi.WithDescription("indicates whether the tunnel interface is active"),
 	)
 	if err != nil {
 		return err
@@ -134,7 +134,7 @@ func setupTunnelInterfaceActive(ctx context.Context, _ *config.Metrics) error {
 
 func setupTunnelInterfaceUp(ctx context.Context, _ *config.Metrics) error {
 	tunnelInterfaceUp, err := meter.Int64ObservableGauge("tunnel_interface_up",
-		otelapi.WithDescription("number of online tunnel interfaces at a given moment"),
+		otelapi.WithDescription("indicates whether the tunnel interface is up"),
 	)
 	if err != nil {
 		return err

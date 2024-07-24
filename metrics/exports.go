@@ -7,18 +7,16 @@ import (
 // Bridge
 
 var (
-	// BridgeActive is a number of active bridges at a given moment
+	// BridgeActive indicates whether the bridge is currently active
 	BridgeActive otelapi.Int64Observable
 
-	// BridgeUp is a number of online bridges at a given moment
+	// BridgeUp indicates whether the bridge is currently up
 	BridgeUp otelapi.Int64Observable
 
-	// TunnelInterfaceActive is a number of active tunnel interfaces at a given
-	// moment
+	// TunnelInterfaceActive indicates whether the tunnel interface is active
 	TunnelInterfaceActive otelapi.Int64Observable
 
-	// TunnelInterfaceUp is a number of online tunnel interfaces at a given
-	// moment
+	// TunnelInterfaceUp indicates whether the tunnel interface is up
 	TunnelInterfaceUp otelapi.Int64Observable
 )
 
