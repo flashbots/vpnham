@@ -1,6 +1,8 @@
 VERSION := $(shell git describe --tags --always --dirty="-dev" --match "v*.*.*" || echo "development" )
 VERSION := $(VERSION:v%=%)
 
+
+
 .PHONY: build
 build:
 	@CGO_ENABLED=0 go build \
@@ -22,5 +24,5 @@ serve:
 
 .PHONY: docker-compose
 docker-compose:
-	@docker compose down --remove-orphans
-	@docker compose up --build || docker compose down --remove-orphans
+	@VPNHAM_LOG_LEVEL=debug docker compose down --remove-orphans
+	@VPNHAM_LOG_LEVEL=debug docker compose up --build || docker compose down --remove-orphans

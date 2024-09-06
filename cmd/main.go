@@ -20,7 +20,8 @@ const (
 
 func main() {
 	cfg := &config.Config{
-		Log: &config.Log{},
+		Log:     &config.Log{},
+		Version: version,
 	}
 
 	flags := []cli.Flag{

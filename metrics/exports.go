@@ -45,3 +45,10 @@ var (
 	// Errors is a counter for the errors
 	Errors otelapi.Int64Counter
 )
+
+// Version
+
+var (
+	// Version reports service Version via metric label
+	Version otelapi.Int64Gauge
+)

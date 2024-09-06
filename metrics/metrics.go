@@ -28,16 +28,29 @@ func Setup(
 	for _, setup := range []func(context.Context, *config.Metrics) error{
 		setupMeter,               // must come first
 		setupLatencyBoundariesUs, // must come second
+
+		// Bridge
+
 		setupBridgeActive,
 		setupBridgeUp,
 		setupTunnelInterfaceActive,
 		setupTunnelInterfaceUp,
+
+		// Probes
+
 		setupProbesSent,
 		setupProbesReturned,
 		setupProbesFailed,
 		setupProbesLatencyForward,
 		setupProbesLatencyReturn,
+
+		// Errors
+
 		setupErrors,
+
+		// Version
+
+		setupVersion,
 	} {
 		if err := setup(ctx, cfg); err != nil {
 			return err
@@ -214,5 +227,18 @@ func setupErrors(ctx context.Context, _ *config.Metrics) error {
 		return err
 	}
 	Errors = errors
+	return nil
+}
+
+// Version
+
+func setupVersion(ctx context.Context, _ *config.Metrics) error {
+	version, err := meter.Int64Gauge("version",
+		otelapi.WithDescription("version"),
+	)
+	if err != nil {
+		return err
+	}
+	Version = version
 	return nil
 }

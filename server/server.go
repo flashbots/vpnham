@@ -12,6 +12,7 @@ import (
 	"github.com/flashbots/vpnham/config"
 	"github.com/flashbots/vpnham/logutils"
 	"github.com/flashbots/vpnham/metrics"
+	"go.opentelemetry.io/otel/attribute"
 	otelapi "go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 )
@@ -48,6 +49,10 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, err
 	}
 	srv.metrics = metrics.NewServer(ctx, cfg.Server.Metrics)
+
+	metrics.Version.Record(ctx, 0, otelapi.WithAttributes(
+		attribute.String("version", cfg.Version),
+	))
 
 	return srv, nil
 }
