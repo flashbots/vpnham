@@ -44,13 +44,15 @@ func (r *Reconciler) bridgeActivateUpdateAWS(
 	}
 	aws := r.cfg.BridgeActivate.AWS
 
-	r.scheduleJob(job.UpdateAWSRouteTables(
-		"aws_update_route_tables",
-		aws.Timeout,
-		e.EvtBridgePeerCIDR().String(),
-		aws.NetworkInterfaceID,
-		aws.RouteTables,
-	))
+	for _, vpc := range aws.Vpcs {
+		r.scheduleJob(job.UpdateAWSRouteTables(
+			"aws_update_route_tables",
+			aws.Timeout,
+			e.EvtBridgePeerCIDR().String(),
+			vpc.NetworkInterfaceID,
+			vpc.RouteTables,
+		))
+	}
 }
 
 func (r *Reconciler) bridgeActivateRunScript(

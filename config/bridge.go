@@ -22,6 +22,8 @@ type Bridge struct {
 	BridgeInterface string     `yaml:"bridge_interface"`
 	PeerCIDR        types.CIDR `yaml:"peer_cidr"`
 
+	SecondaryInterfaces []string `yaml:"secondary_interfaces"`
+
 	StatusAddr                 types.Address `yaml:"status_addr"`
 	PartnerURL                 string        `yaml:"partner_url"`
 	PartnerStatusTimeout       time.Duration `yaml:"partner_status_timeout"`
@@ -79,6 +81,7 @@ func (b *Bridge) PostLoad(ctx context.Context) error {
 			b.Reconcile = &Reconcile{}
 		}
 		b.Reconcile.BridgeInterface = b.BridgeInterface
+		b.Reconcile.SecondaryInterfaces = b.SecondaryInterfaces
 
 		if err := b.Reconcile.PostLoad(ctx); err != nil {
 			return err

@@ -2,6 +2,7 @@ package aws
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -11,7 +12,14 @@ import (
 	"go.uber.org/zap"
 )
 
-func (cli *Client) RouteTableExists(ctx context.Context, routeTable string) (bool, error) {
+var (
+	errFailedToDeriveVpcIdFromRouteTable = errors.New("failed to derive vpc id from route table id")
+)
+
+func (cli *Client) RouteTableVpcID(
+	ctx context.Context,
+	routeTable string,
+) (string, error) {
 	l := logutils.LoggerFromContext(ctx)
 
 	l.Debug("Describing AWS route table...",
@@ -26,14 +34,25 @@ func (cli *Client) RouteTableExists(ctx context.Context, routeTable string) (boo
 			zap.Error(err),
 			zap.String("route_table", routeTable),
 		)
-		return false, err
+		return "", fmt.Errorf("%w: %w",
+			errFailedToDeriveVpcIdFromRouteTable, err,
+		)
 	}
 
 	if len(out.RouteTables) == 0 {
-		return false, nil
+		return "", fmt.Errorf("%w: route table not found: %s",
+			errFailedToDeriveVpcIdFromRouteTable, routeTable,
+		)
 	}
 
-	return true, nil
+	rt := out.RouteTables[0]
+	if rt.VpcId == nil {
+		return "", fmt.Errorf("%w: route table has not vpc id: %s",
+			errFailedToDeriveVpcIdFromRouteTable, routeTable,
+		)
+	}
+
+	return *rt.VpcId, nil
 }
 
 func (cli *Client) FindRoute(

@@ -6,7 +6,8 @@ import (
 )
 
 type Reconcile struct {
-	BridgeInterface string `yaml:"-"`
+	BridgeInterface     string   `yaml:"-"`
+	SecondaryInterfaces []string `yaml:"-"`
 
 	ScriptsTimeout time.Duration `yaml:"scripts_timeout"`
 
@@ -25,6 +26,7 @@ func (r *Reconcile) PostLoad(ctx context.Context) error {
 			r.BridgeActivate = &ReconcileBridgeActivate{}
 		}
 		r.BridgeActivate.BridgeInterface = r.BridgeInterface
+		r.BridgeActivate.SecondaryInterfaces = r.SecondaryInterfaces
 
 		if err := r.BridgeActivate.PostLoad(ctx); err != nil {
 			return err
