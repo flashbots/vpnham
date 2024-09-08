@@ -65,7 +65,7 @@ func (j *UpdateGCPRoute) Execute(ctx context.Context) error {
 		}
 		// route exists but with different config => delete, then create
 		err := utils.WithTimeout(ctx, j.Timeout, func(ctx context.Context) error {
-			return gcp.DeleteRoute(ctx, utils.UnwrapString(route.Name))
+			return gcp.DeleteRoute(ctx, route)
 		})
 		if err != nil {
 			return err
@@ -82,7 +82,7 @@ func (j *UpdateGCPRoute) Execute(ctx context.Context) error {
 			if foundMatch {
 				// we already found matching rule, so let's clean up the rest
 				err := utils.WithTimeout(ctx, j.Timeout, func(ctx context.Context) error {
-					return gcp.DeleteRoute(ctx, utils.UnwrapString(route.Name))
+					return gcp.DeleteRoute(ctx, route)
 				})
 				if err != nil {
 					errs = append(errs, err)
@@ -94,7 +94,7 @@ func (j *UpdateGCPRoute) Execute(ctx context.Context) error {
 				continue
 			}
 			err := utils.WithTimeout(ctx, j.Timeout, func(ctx context.Context) error {
-				return gcp.DeleteRoute(ctx, utils.UnwrapString(route.Name))
+				return gcp.DeleteRoute(ctx, route)
 			})
 			if err != nil {
 				errs = append(errs, err)

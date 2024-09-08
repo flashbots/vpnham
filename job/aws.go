@@ -93,7 +93,7 @@ func (j *UpdateAWSRouteTables) updateRouteTable(
 		}
 		// route exists but with different next hop
 		return utils.WithTimeout(ctx, j.Timeout, func(ctx context.Context) error {
-			return j.aws.UpdateRoute(ctx, routeTable, cidr, networkInterfaceID)
+			return j.aws.UpdateRoute(ctx, routeTable, route, cidr, networkInterfaceID)
 		})
 
 	default:
