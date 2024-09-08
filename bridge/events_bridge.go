@@ -2,6 +2,7 @@ package bridge
 
 import (
 	"context"
+	"time"
 
 	"github.com/flashbots/vpnham/event"
 	"github.com/flashbots/vpnham/logutils"
@@ -81,6 +82,12 @@ func (s *Server) eventBridgeDeactivated(ctx context.Context, _ *event.BridgeDeac
 	l := logutils.LoggerFromContext(ctx)
 
 	l.Info("Bridge deactivated")
+
+	if r := s.cfg.Reconcile.BridgeActivate.Reapply; r.Enabled() {
+		ba := s.reapply.bridgeActivate
+		ba.Count = 0
+		ba.Next = time.Time{} // disable re-activations of an inactive bridge
+	}
 }
 
 func (s *Server) eventBridgeActivated(ctx context.Context, e *event.BridgeActivated, failureSink chan<- error) {

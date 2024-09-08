@@ -24,5 +24,5 @@ serve:
 
 .PHONY: docker-compose
 docker-compose:
-	@VPNHAM_LOG_LEVEL=debug docker compose down --remove-orphans
-	@VPNHAM_LOG_LEVEL=debug docker compose up --build || docker compose down --remove-orphans
+	docker compose down --remove-orphans
+	@VPNHAM_LOG_LEVEL=info docker compose up --build || docker compose down --remove-orphans
