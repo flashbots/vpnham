@@ -11,8 +11,8 @@ import (
 )
 
 type ReconcileBridgeActivateAWS struct {
+	BridgeName          string                                    `yaml:"-"`
 	BridgeInterface     string                                    `yaml:"-"`
-	Region              string                                    `yaml:"-"`
 	SecondaryInterfaces []string                                  `yaml:"-"`
 	Vpcs                map[string]*ReconcileBridgeActivateAWSVpc `yaml:"-"`
 
@@ -30,24 +30,12 @@ type ReconcileBridgeActivateAWSVpc struct {
 
 var (
 	errAWSDuplicateVpcForSecondaryInterface = errors.New("secondary interface belongs to a vpc that another interface is already attached")
-	errAWSRouteTableWithoutInterface        = errors.New("route table has not interface attached to its vpc")
+	errAWSRouteTableWithoutInterface        = errors.New("route-table belongs to the vpc that we have no interface attached to")
 )
 
 func (r *ReconcileBridgeActivateAWS) PostLoad(ctx context.Context) error {
 	if r.Timeout == 0 {
 		r.Timeout = DefaultAWSTimeout
-	}
-
-	{ // aws region
-		var reg string
-		err := utils.WithTimeout(ctx, r.Timeout, func(ctx context.Context) (err error) {
-			reg, err = awscli.Region(ctx)
-			return err
-		})
-		if err != nil {
-			return err
-		}
-		r.Region = reg
 	}
 
 	aws, err := awscli.NewClient(ctx)
@@ -111,7 +99,7 @@ func (r *ReconcileBridgeActivateAWS) PostLoad(ctx context.Context) error {
 		}
 	}
 
-	{ // route tables
+	{ // route-tables
 		for _, routeTable := range r.RouteTables {
 			var vpcID string
 			err := utils.WithTimeout(ctx, r.Timeout, func(ctx context.Context) (err error) {

@@ -4,11 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"strings"
 
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/flashbots/vpnham/utils"
 )
@@ -47,7 +43,7 @@ func (cli *Client) NetworkInterfaceId(
 		)
 	}
 
-	macs, err := macAddresses(ctx)
+	macs, err := cli.macAddresses(ctx)
 	if err != nil {
 		return "", fmt.Errorf("%w: %w",
 			errFailedToDeriveEc2NetworkInterfaceId, err,
@@ -56,7 +52,7 @@ func (cli *Client) NetworkInterfaceId(
 
 	errs := []error{}
 	for _, mac := range macs {
-		eni, err := macInterfaceID(ctx, mac)
+		eni, err := cli.macInterfaceID(ctx, mac)
 		if err != nil {
 			return "", fmt.Errorf("%w: %w",
 				errFailedToDeriveEc2NetworkInterfaceId, err,
@@ -64,7 +60,7 @@ func (cli *Client) NetworkInterfaceId(
 		}
 
 		if len(ipv4s) > 0 {
-			macIPv4s, err := macLocalIPv4s(ctx, mac)
+			macIPv4s, err := cli.macLocalIPv4s(ctx, mac)
 			if err != nil {
 				// there could be legit errors
 				// (e.g. when getting ipv4 addresses for ipv6-only interface)
@@ -79,7 +75,7 @@ func (cli *Client) NetworkInterfaceId(
 		}
 
 		if len(ipv6s) > 0 {
-			macIPv6s, err := macIPv6s(ctx, mac)
+			macIPv6s, err := cli.macIPv6s(ctx, mac)
 			if err != nil {
 				// there could be legit errors
 				// (e.g. when getting ipv6 addresses for ipv4-only interface)
@@ -127,92 +123,4 @@ func (cli *Client) NetworkInterfaceVpcID(
 	}
 
 	return *ifs.VpcId, nil
-}
-
-func macAddresses(ctx context.Context) ([]string, error) {
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		return nil, err
-	}
-	cli := imds.NewFromConfig(cfg)
-
-	out, err := cli.GetMetadata(ctx, &imds.GetMetadataInput{
-		Path: "network/interfaces/macs/",
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	buf := &strings.Builder{}
-	if _, err := io.Copy(buf, out.Content); err != nil {
-		return nil, err
-	}
-
-	return strings.Split(strings.TrimSpace(buf.String()), "\n"), nil
-}
-
-func macInterfaceID(ctx context.Context, mac string) (string, error) {
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		return "", err
-	}
-	cli := imds.NewFromConfig(cfg)
-
-	out, err := cli.GetMetadata(ctx, &imds.GetMetadataInput{
-		Path: "network/interfaces/macs/" + mac + "/interface-id",
-	})
-	if err != nil {
-		return "", err
-	}
-
-	buf := &strings.Builder{}
-	if _, err := io.Copy(buf, out.Content); err != nil {
-		return "", err
-	}
-
-	return strings.TrimSpace(buf.String()), nil
-}
-
-func macLocalIPv4s(ctx context.Context, mac string) ([]string, error) {
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		return nil, err
-	}
-	cli := imds.NewFromConfig(cfg)
-
-	out, err := cli.GetMetadata(ctx, &imds.GetMetadataInput{
-		Path: "network/interfaces/macs/" + mac + "/local-ipv4s",
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	buf := &strings.Builder{}
-	if _, err := io.Copy(buf, out.Content); err != nil {
-		return nil, err
-	}
-
-	return strings.Split(strings.TrimSpace(buf.String()), "\n"), nil
-}
-
-func macIPv6s(ctx context.Context, mac string) ([]string, error) {
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		return nil, err
-	}
-	cli := imds.NewFromConfig(cfg)
-
-	out, err := cli.GetMetadata(ctx, &imds.GetMetadataInput{
-		Path: "network/interfaces/macs/" + mac + "/ipv6s",
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	buf := &strings.Builder{}
-	if _, err := io.Copy(buf, out.Content); err != nil {
-		return nil, err
-	}
-
-	return strings.Split(strings.TrimSpace(buf.String()), "\n"), nil
 }

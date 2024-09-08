@@ -15,7 +15,12 @@ const (
 	DefaultThresholdUp   = 2
 
 	DefaultAWSTimeout     = 15 * time.Second
+	DefaultGCPTimeout     = 15 * time.Second
 	DefaultScriptsTimeout = 30 * time.Second
+
+	DefaultRouteIDPrefix = "vpnham"
+
+	DefaultGCPRoutePriority uint32 = 1000
 
 	DefaultMetricsListenAddr = "0.0.0.0:8000"
 

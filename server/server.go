@@ -106,13 +106,14 @@ func (s *Server) Run() error {
 	}
 	s.metrics.Stop(ctx)
 
-	if len(errs) == 1 {
-		return errs[0]
-	} else if len(errs) > 1 {
+	switch len(errs) {
+	default:
 		return errors.Join(errs...)
+	case 1:
+		return errs[0]
+	case 0:
+		return nil
 	}
-
-	return nil
 }
 
 func (s *Server) observeMetrics(ctx context.Context, observer otelapi.Observer) error {

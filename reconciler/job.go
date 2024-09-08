@@ -60,13 +60,13 @@ func (r *Reconciler) executeJob(
 	if err == nil {
 		l.Info("Executed job",
 			zap.Int64("duration_us", duration.Microseconds()),
-			zap.String("job_name", job.Name()),
+			zap.String("job_name", job.GetJobName()),
 		)
 	} else {
 		l.Error("Failed job",
 			zap.Error(err),
 			zap.Int64("duration_us", duration.Microseconds()),
-			zap.String("job_name", job.Name()),
+			zap.String("job_name", job.GetJobName()),
 		)
 	}
 }

@@ -63,6 +63,16 @@ func GetInterfaceIP(name string, ipv4 bool) (string, error) {
 	}
 }
 
+func GetInterfaceMAC(name string) (string, error) {
+	ifs, err := net.InterfaceByName(name)
+	if err != nil {
+		return "", fmt.Errorf("%s: %w",
+			name, err,
+		)
+	}
+	return ifs.HardwareAddr.String(), nil
+}
+
 func WithTimeout(
 	ctx context.Context,
 	timeout time.Duration,
@@ -81,4 +91,40 @@ func WithTimeout(
 	}
 
 	return err
+}
+
+func UnwrapString(str *string) string {
+	if str == nil {
+		return ""
+	}
+	return *str
+}
+
+func UnwrapUint32(n *uint32) uint32 {
+	if n == nil {
+		return 0
+	}
+	return *n
+}
+
+func TagsMatch(a, b []string) bool {
+	if len(a) == 0 && len(b) == 0 {
+		return true
+	}
+	if len(a) == 0 && len(b) != 0 {
+		return false
+	}
+	if len(a) != 0 && len(b) == 0 {
+		return false
+	}
+	set := make(map[string]struct{}, len(a))
+	for _, item := range a {
+		set[item] = struct{}{}
+	}
+	for _, item := range b {
+		if _, found := set[item]; !found {
+			return false
+		}
+	}
+	return true
 }

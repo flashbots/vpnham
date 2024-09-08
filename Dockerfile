@@ -1,6 +1,6 @@
 # stage: prefetch ------------------------------------------------------
 
-FROM golang:1.22-alpine as prefetch
+FROM golang:1.22-alpine AS prefetch
 
 RUN apk add --no-cache gcc musl-dev linux-headers
 
@@ -11,7 +11,7 @@ RUN go mod download
 
 # stage: build ---------------------------------------------------------
 
-FROM prefetch as build
+FROM prefetch AS build
 
 COPY . .
 

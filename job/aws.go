@@ -7,49 +7,41 @@ import (
 
 	awssdk "github.com/aws/aws-sdk-go-v2/aws"
 	awstypes "github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/flashbots/vpnham/aws"
+	awscli "github.com/flashbots/vpnham/aws"
 	"github.com/flashbots/vpnham/metrics"
 	"github.com/flashbots/vpnham/utils"
 	"go.opentelemetry.io/otel/attribute"
 	otelapi "go.opentelemetry.io/otel/metric"
 )
 
-type updateAWSRouteTables struct {
-	name    string
-	timeout time.Duration
+type UpdateAWSRouteTables struct {
+	aws *awscli.Client
 
-	cidr               string
-	networkInterfaceID string
-	routeTables        []string
+	JobName string
+	Timeout time.Duration
+
+	CIDR               string
+	NetworkInterfaceID string
+	RouteTables        []string
 }
 
-func UpdateAWSRouteTables(
-	name string,
-	timeout time.Duration,
-	cidr string,
-	networkInterfaceID string,
-	routeTables []string,
-) Job {
-	return &updateAWSRouteTables{
-		name:               name,
-		timeout:            timeout,
-		cidr:               cidr,
-		networkInterfaceID: networkInterfaceID,
-		routeTables:        routeTables,
+func (j *UpdateAWSRouteTables) GetJobName() string {
+	return j.JobName
+}
+
+func (j *UpdateAWSRouteTables) Execute(ctx context.Context) error {
+	aws, err := awscli.NewClient(ctx)
+	if err != nil {
+		return err
 	}
-}
+	j.aws = aws
 
-func (j *updateAWSRouteTables) Name() string {
-	return j.name
-}
-
-func (j *updateAWSRouteTables) Execute(ctx context.Context) error {
 	errs := []error{}
-	for _, rt := range j.routeTables {
-		err := j.updateRouteTable(ctx, rt, j.cidr, j.networkInterfaceID)
+	for _, rt := range j.RouteTables {
+		err := j.updateRouteTable(ctx, rt, j.CIDR, j.NetworkInterfaceID)
 		if err != nil {
 			metrics.Errors.Add(ctx, 1, otelapi.WithAttributes(
-				attribute.String(metrics.LabelErrorScope, "job_"+j.name),
+				attribute.String(metrics.LabelErrorScope, "job_"+j.JobName),
 			))
 			errs = append(errs, err)
 		}
@@ -57,50 +49,67 @@ func (j *updateAWSRouteTables) Execute(ctx context.Context) error {
 
 	switch len(errs) {
 	default:
+		metrics.Errors.Add(ctx, int64(len(errs)), otelapi.WithAttributes(
+			attribute.String(metrics.LabelErrorScope, "job_"+j.JobName),
+		))
 		return errors.Join(errs...)
 	case 1:
+		metrics.Errors.Add(ctx, 1, otelapi.WithAttributes(
+			attribute.String(metrics.LabelErrorScope, "job_"+j.JobName),
+		))
 		return errs[0]
 	case 0:
 		return nil
 	}
 }
 
-func (j *updateAWSRouteTables) updateRouteTable(
+func (j *UpdateAWSRouteTables) updateRouteTable(
 	ctx context.Context,
 	routeTable string,
 	cidr string,
 	networkInterfaceID string,
 ) error {
-	cli, err := aws.NewClient(ctx)
-	if err != nil {
-		return err
-	}
-
-	var route *awstypes.Route
-
-	// check if the route is already set
-	err = utils.WithTimeout(ctx, j.timeout, func(ctx context.Context) error {
-		route, err = cli.FindRoute(ctx, routeTable, cidr)
+	var routes []*awstypes.Route
+	err := utils.WithTimeout(ctx, j.Timeout, func(ctx context.Context) (err error) {
+		routes, err = j.aws.FindRoute(ctx, routeTable, cidr)
 		return err
 	})
 	if err != nil {
 		return err
 	}
 
-	if route != nil && awssdk.ToString(route.NetworkInterfaceId) == networkInterfaceID {
-		// route is already up to date
-		return nil
-	}
+	switch len(routes) {
+	case 0:
+		// no route yet
+		return utils.WithTimeout(ctx, j.Timeout, func(ctx context.Context) error {
+			return j.aws.CreateRoute(ctx, routeTable, cidr, networkInterfaceID)
+		})
 
-	if route != nil {
+	case 1:
+		route := routes[0]
+		if awssdk.ToString(route.NetworkInterfaceId) == networkInterfaceID {
+			// route is already up to date
+			return nil
+		}
 		// route exists but with different next hop
-		return utils.WithTimeout(ctx, j.timeout, func(ctx context.Context) error {
-			return cli.UpdateRoute(ctx, routeTable, cidr, networkInterfaceID)
+		return utils.WithTimeout(ctx, j.Timeout, func(ctx context.Context) error {
+			return j.aws.UpdateRoute(ctx, routeTable, cidr, networkInterfaceID)
+		})
+
+	default:
+		// i.d.k. if this is even possible to have 2+ routes with the same
+		// destination cidr in aws route-table.  but at any rate, if that's the
+		// case let's just delete all of them and create a new one
+		for _, route := range routes {
+			err = utils.WithTimeout(ctx, j.Timeout, func(ctx context.Context) error {
+				return j.aws.DeleteRoute(ctx, routeTable, route)
+			})
+			if err != nil {
+				return err
+			}
+		}
+		return utils.WithTimeout(ctx, j.Timeout, func(ctx context.Context) error {
+			return j.aws.CreateRoute(ctx, routeTable, cidr, networkInterfaceID)
 		})
 	}
-
-	// no route yet
-	return utils.WithTimeout(ctx, j.timeout, func(ctx context.Context) error {
-		return cli.CreateRoute(ctx, routeTable, cidr, networkInterfaceID)
-	})
 }

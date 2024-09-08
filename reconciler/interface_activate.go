@@ -54,9 +54,9 @@ func (r *Reconciler) interfaceActivateRunScript(
 		return
 	}
 
-	r.scheduleJob(job.RunScript(
-		"interface_activate",
-		r.cfg.ScriptsTimeout,
-		r.renderScript(&r.cfg.InterfaceActivate.Script, placeholders),
-	))
+	r.scheduleJob(&job.RunScript{
+		JobName: "interface_activate",
+		Timeout: r.cfg.ScriptsTimeout,
+		Script:  r.renderScript(&r.cfg.InterfaceActivate.Script, placeholders),
+	})
 }

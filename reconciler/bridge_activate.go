@@ -3,6 +3,8 @@ package reconciler
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/flashbots/vpnham/event"
 	"github.com/flashbots/vpnham/job"
@@ -29,6 +31,7 @@ func (r *Reconciler) BridgeActivate(
 	}
 
 	r.bridgeActivateUpdateAWS(ctx, e)
+	r.bridgeActivateUpdateGCP(ctx, e)
 	r.bridgeActivateRunScript(ctx, e)
 }
 
@@ -45,13 +48,50 @@ func (r *Reconciler) bridgeActivateUpdateAWS(
 	aws := r.cfg.BridgeActivate.AWS
 
 	for _, vpc := range aws.Vpcs {
-		r.scheduleJob(job.UpdateAWSRouteTables(
-			"aws_update_route_tables",
-			aws.Timeout,
-			e.EvtBridgePeerCIDR().String(),
-			vpc.NetworkInterfaceID,
-			vpc.RouteTables,
-		))
+		r.scheduleJob(&job.UpdateAWSRouteTables{
+			JobName: "aws_update_route_tables",
+			Timeout: aws.Timeout,
+
+			CIDR:               e.EvtBridgePeerCIDR().String(),
+			NetworkInterfaceID: vpc.NetworkInterfaceID,
+			RouteTables:        vpc.RouteTables,
+		})
+	}
+}
+
+func (r *Reconciler) bridgeActivateUpdateGCP(
+	ctx context.Context,
+	e event.BridgeEvent,
+) {
+	l := logutils.LoggerFromContext(ctx)
+
+	if r.cfg.BridgeActivate.GCP == nil {
+		l.Debug("No bridge activation GCP configuration provided; skipping...")
+		return
+	}
+	gcp := r.cfg.BridgeActivate.GCP
+
+	for id, vpc := range gcp.Vpcs {
+		cidr := e.EvtBridgePeerCIDR().String()
+
+		parts := strings.Split(id, "/")
+		name := gcp.RouteIDPrefix + "-" + parts[len(parts)-1]
+
+		description := "Created by vpnham on " + time.Now().UTC().Format(time.RFC3339)
+
+		r.scheduleJob(&job.UpdateGCPRoute{
+			JobName: "gcp_update_route",
+			Timeout: gcp.Timeout,
+
+			Name:        name,
+			Description: description,
+
+			DestRange:       cidr,
+			Network:         vpc.ID,
+			NextHopInstance: gcp.InstanceName,
+			Priority:        gcp.RoutePriority,
+			Tags:            gcp.RouteTags,
+		})
 	}
 }
 
@@ -78,9 +118,10 @@ func (r *Reconciler) bridgeActivateRunScript(
 		return
 	}
 
-	r.scheduleJob(job.RunScript(
-		"bridge_activate",
-		r.cfg.ScriptsTimeout,
-		r.renderScript(&r.cfg.BridgeActivate.Script, placeholders),
-	))
+	r.scheduleJob(&job.RunScript{
+		JobName: "bridge_activate",
+		Timeout: r.cfg.ScriptsTimeout,
+
+		Script: r.renderScript(&r.cfg.BridgeActivate.Script, placeholders),
+	})
 }

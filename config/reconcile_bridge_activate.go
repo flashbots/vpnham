@@ -7,13 +7,16 @@ import (
 )
 
 type ReconcileBridgeActivate struct {
+	BridgeName          string   `yaml:"-"`
 	BridgeInterface     string   `yaml:"-"`
 	SecondaryInterfaces []string `yaml:"-"`
 
 	Reapply *ReconcileReapply `yaml:"reapply"`
 
-	AWS    *ReconcileBridgeActivateAWS `yaml:"aws"`
-	Script types.Script                `yaml:"script"`
+	AWS *ReconcileBridgeActivateAWS `yaml:"aws"`
+	GCP *ReconcileBridgeActivateGCP `yaml:"gcp"`
+
+	Script types.Script `yaml:"script"`
 }
 
 func (r *ReconcileBridgeActivate) PostLoad(ctx context.Context) error {
@@ -26,14 +29,22 @@ func (r *ReconcileBridgeActivate) PostLoad(ctx context.Context) error {
 	}
 
 	if r.AWS != nil {
+		r.AWS.BridgeName = r.BridgeName
 		r.AWS.BridgeInterface = r.BridgeInterface
 		r.AWS.SecondaryInterfaces = r.SecondaryInterfaces
 
 		if err := r.AWS.PostLoad(ctx); err != nil {
 			return err
 		}
-		if r.AWS.Timeout == 0 {
-			r.AWS.Timeout = DefaultAWSTimeout
+	}
+
+	if r.GCP != nil {
+		r.GCP.BridgeName = r.BridgeName
+		r.GCP.BridgeInterface = r.BridgeInterface
+		r.GCP.SecondaryInterfaces = r.SecondaryInterfaces
+
+		if err := r.GCP.PostLoad(ctx); err != nil {
+			return err
 		}
 	}
 

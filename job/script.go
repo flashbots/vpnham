@@ -17,34 +17,22 @@ import (
 	"go.uber.org/zap"
 )
 
-type runScript struct {
-	name    string
-	timeout time.Duration
+type RunScript struct {
+	JobName string
+	Timeout time.Duration
 
-	script types.Script
+	Script types.Script
 }
 
-func RunScript(
-	name string,
-	timeout time.Duration,
-	script types.Script,
-) Job {
-	return &runScript{
-		name:    name,
-		timeout: timeout,
-		script:  script,
-	}
+func (j *RunScript) GetJobName() string {
+	return j.JobName
 }
 
-func (j *runScript) Name() string {
-	return j.name
-}
-
-func (j *runScript) Execute(ctx context.Context) error {
+func (j *RunScript) Execute(ctx context.Context) error {
 	l := logutils.LoggerFromContext(ctx)
 
 	errs := []error{}
-	for step, _cmd := range j.script {
+	for step, _cmd := range j.Script {
 		if len(_cmd) == 0 {
 			continue
 		}
@@ -55,7 +43,7 @@ func (j *runScript) Execute(ctx context.Context) error {
 			zap.String("command", strCmd),
 		)
 
-		ctx, cancel := context.WithTimeout(ctx, j.timeout)
+		ctx, cancel := context.WithTimeout(ctx, j.Timeout)
 		defer cancel()
 
 		cmd := exec.CommandContext(ctx, _cmd[0], _cmd[1:]...)
@@ -69,20 +57,20 @@ func (j *runScript) Execute(ctx context.Context) error {
 		cmd.Env = os.Environ()
 
 		start := time.Now()
-		err := utils.WithTimeout(ctx, j.timeout, func(ctx context.Context) error {
+		err := utils.WithTimeout(ctx, j.Timeout, func(ctx context.Context) error {
 			return cmd.Run()
 		})
 		duration := time.Since(start)
 
 		if err != nil {
 			metrics.Errors.Add(ctx, 1, otelapi.WithAttributes(
-				attribute.String(metrics.LabelErrorScope, "job_"+j.name),
+				attribute.String(metrics.LabelErrorScope, "job_"+j.JobName),
 			))
 			errs = append(errs, err)
 		}
 
 		l.Info("Executed command",
-			zap.String("script", j.name),
+			zap.String("script", j.JobName),
 			zap.Int("step", step),
 			zap.String("command", strCmd),
 			zap.Int64("duration_us", duration.Microseconds()),

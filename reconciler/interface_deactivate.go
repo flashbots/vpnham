@@ -36,9 +36,9 @@ func (r *Reconciler) InterfaceDeactivate(
 		return
 	}
 
-	r.scheduleJob(job.RunScript(
-		"interface_deactivate",
-		r.cfg.ScriptsTimeout,
-		r.renderScript(&r.cfg.BridgeActivate.Script, placeholders),
-	))
+	r.scheduleJob(&job.RunScript{
+		JobName: "interface_deactivate",
+		Timeout: r.cfg.ScriptsTimeout,
+		Script:  r.renderScript(&r.cfg.BridgeActivate.Script, placeholders),
+	})
 }

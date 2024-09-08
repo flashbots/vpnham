@@ -6,6 +6,7 @@ import (
 )
 
 type Reconcile struct {
+	BridgeName          string   `yaml:"-"`
 	BridgeInterface     string   `yaml:"-"`
 	SecondaryInterfaces []string `yaml:"-"`
 
@@ -25,6 +26,7 @@ func (r *Reconcile) PostLoad(ctx context.Context) error {
 		if r.BridgeActivate == nil {
 			r.BridgeActivate = &ReconcileBridgeActivate{}
 		}
+		r.BridgeActivate.BridgeName = r.BridgeName
 		r.BridgeActivate.BridgeInterface = r.BridgeInterface
 		r.BridgeActivate.SecondaryInterfaces = r.SecondaryInterfaces
 

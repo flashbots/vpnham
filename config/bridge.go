@@ -80,6 +80,7 @@ func (b *Bridge) PostLoad(ctx context.Context) error {
 		if b.Reconcile == nil {
 			b.Reconcile = &Reconcile{}
 		}
+		b.Reconcile.BridgeName = b.Name
 		b.Reconcile.BridgeInterface = b.BridgeInterface
 		b.Reconcile.SecondaryInterfaces = b.SecondaryInterfaces
 
