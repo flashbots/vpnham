@@ -202,7 +202,7 @@ func (s *Server) derivePartnerUpDownEvents(e event.PartnerPollEvent, updateMonit
 
 	switch s.partnerMonitor.Status() {
 	case monitor.Down:
-		if s.partnerStatus.Up {
+		if s.partnerStatus != nil && s.partnerStatus.Up {
 			s.partnerStatus.Up = false
 			s.events <- &event.PartnerWentDown{ // emit event
 				Timestamp: e.EvtTimestamp(),
@@ -210,7 +210,7 @@ func (s *Server) derivePartnerUpDownEvents(e event.PartnerPollEvent, updateMonit
 		}
 
 	case monitor.Up:
-		if firstContact || !s.partnerStatus.Up {
+		if firstContact || (s.partnerStatus == nil || !s.partnerStatus.Up) {
 			s.partnerStatus.Up = true
 			s.events <- &event.PartnerWentUp{ // emit events
 				Timestamp: e.EvtTimestamp(),

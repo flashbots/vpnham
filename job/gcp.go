@@ -3,6 +3,7 @@ package job
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	gcepb "cloud.google.com/go/compute/apiv1/computepb"
@@ -35,8 +36,8 @@ func (j *UpdateGCPRoute) GetJobName() string {
 
 func (j *UpdateGCPRoute) Execute(ctx context.Context) error {
 	errs := make([]error, 0)
-	for _, destRange := range j.DestRanges {
-		if err := j.updateRoute(ctx, destRange.String()); err != nil {
+	for idx, destRange := range j.DestRanges {
+		if err := j.updateRoute(ctx, idx, destRange.String()); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -53,6 +54,7 @@ func (j *UpdateGCPRoute) Execute(ctx context.Context) error {
 
 func (j *UpdateGCPRoute) updateRoute(
 	ctx context.Context,
+	idx int,
 	destRange string,
 ) error {
 	gcp, err := gcpcli.NewClient(ctx)
@@ -76,12 +78,12 @@ func (j *UpdateGCPRoute) updateRoute(
 	case 0:
 		// no route yet
 		return utils.WithTimeout(ctx, j.Timeout, func(ctx context.Context) error {
-			return gcp.CreateRoute(ctx, j.gceRoute(destRange))
+			return gcp.CreateRoute(ctx, j.gceRoute(idx, destRange))
 		})
 
 	case 1:
 		route := routes[0]
-		if j.matches(route) {
+		if j.matches(idx, route) {
 			// route is already up to date
 			return nil
 		}
@@ -93,7 +95,7 @@ func (j *UpdateGCPRoute) updateRoute(
 			return err
 		}
 		return utils.WithTimeout(ctx, j.Timeout, func(ctx context.Context) error {
-			return gcp.CreateRoute(ctx, j.gceRoute(destRange))
+			return gcp.CreateRoute(ctx, j.gceRoute(idx, destRange))
 		})
 
 	default:
@@ -111,7 +113,7 @@ func (j *UpdateGCPRoute) updateRoute(
 				}
 				continue
 			}
-			if j.matches(route) {
+			if j.matches(idx, route) {
 				foundMatch = true
 				continue
 			}
@@ -126,7 +128,7 @@ func (j *UpdateGCPRoute) updateRoute(
 		// if the match not found, create a new one
 		if !foundMatch {
 			err := utils.WithTimeout(ctx, j.Timeout, func(ctx context.Context) error {
-				return gcp.CreateRoute(ctx, j.gceRoute(destRange))
+				return gcp.CreateRoute(ctx, j.gceRoute(idx, destRange))
 			})
 			if err != nil {
 				errs = append(errs, err)
@@ -150,9 +152,11 @@ func (j *UpdateGCPRoute) updateRoute(
 	}
 }
 
-func (j *UpdateGCPRoute) gceRoute(destRange string) *gcepb.Route {
+func (j *UpdateGCPRoute) gceRoute(idx int, destRange string) *gcepb.Route {
+	name := j.Name + "-" + fmt.Sprintf("%02d", idx)
+
 	return &gcepb.Route{
-		Name:        proto.String(j.Name),
+		Name:        proto.String(name),
 		Description: proto.String(j.Description),
 
 		DestRange:       proto.String(destRange),
@@ -163,8 +167,8 @@ func (j *UpdateGCPRoute) gceRoute(destRange string) *gcepb.Route {
 	}
 }
 
-func (j *UpdateGCPRoute) matches(route *gcepb.Route) bool {
-	return utils.UnwrapString(route.Name) == j.Name &&
+func (j *UpdateGCPRoute) matches(idx int, route *gcepb.Route) bool {
+	return utils.UnwrapString(route.Name) == j.Name+"-"+fmt.Sprintf("%02d", idx) &&
 		utils.UnwrapString(route.NextHopInstance) == j.NextHopInstance &&
 		utils.UnwrapUint32(route.Priority) == j.Priority &&
 		utils.TagsMatch(route.Tags, j.Tags)

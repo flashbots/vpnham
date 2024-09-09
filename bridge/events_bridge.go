@@ -30,7 +30,7 @@ func (s *Server) eventBridgeWentDown(ctx context.Context, e *event.BridgeWentDow
 		}
 	}
 
-	if !s.partnerStatus.Up {
+	if s.partnerStatus == nil || !s.partnerStatus.Up {
 		s.events <- &event.ConnectivityLost{ // emit event
 			Timestamp: e.Timestamp,
 		}
