@@ -11,10 +11,11 @@ import (
 const (
 	placeholderProto = "proto"
 
-	placeholderBridgeInterface      = "bridge_interface"
-	placeholderBridgeInterfaceIP    = "bridge_interface_ip"
-	placeholderBridgePeerCIDR       = "bridge_peer_cidr"
-	placeholderBridgeExtraPeerCIDRs = "bridge_extra_peer_cidrs"
+	placeholderBridgeInterface     = "bridge_interface"
+	placeholderBridgeInterfaceIP   = "bridge_interface_ip"
+	placeholderBridgePeerCIDR      = "bridge_peer_cidr"
+	placeholderBridgePeerCIDRsIPv4 = "bridge_peer_cidrs_ipv4"
+	placeholderBridgePeerCIDRsIPv6 = "bridge_peer_cidrs_ipv6"
 
 	placeholderTunnelInterface      = "tunnel_interface"
 	placeholderTunnelInterfaceIP    = "tunnel_interface_ip"
@@ -55,14 +56,18 @@ func (r *Reconciler) renderPlaceholders(e event.Event) (map[string]string, error
 			}
 		}
 
-		if len(cidrs) > 1 {
-			extraPeerCIDRs := make([]string, 0, len(cidrs)-1)
-			for idx := 1; idx < len(cidrs); idx++ {
-				extraPeerCIDRs = append(extraPeerCIDRs, cidrs[idx].String())
+		cidrsIPv4 := make([]string, 0)
+		cidrsIPv6 := make([]string, 0)
+		for _, cidr := range cidrs {
+			if cidr.IsIPv4() {
+				cidrsIPv4 = append(cidrsIPv4, cidr.String())
+			} else {
+				cidrsIPv6 = append(cidrsIPv4, cidr.String())
 			}
-
-			placeholders[placeholderBridgeExtraPeerCIDRs] = strings.Join(extraPeerCIDRs, ",")
 		}
+
+		placeholders[placeholderBridgePeerCIDRsIPv4] = strings.Join(cidrsIPv4, " ")
+		placeholders[placeholderBridgePeerCIDRsIPv6] = strings.Join(cidrsIPv6, " ")
 	}
 
 	return placeholders, nil

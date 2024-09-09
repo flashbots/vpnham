@@ -42,11 +42,11 @@ bridges:
           maximum_delay: 3600s
 
         script:
-          - ["ip", "-${proto}", "route", "replace", "${bridge_peer_cidr}", "dev", "${tunnel_interface}"]
+          - ["/bin/sh", "-c", "for cidr in ${bridge_peer_cidrs_ipv4}; do ip -4 route replace $cidr dev ${tunnel_interface}; done"]
 
       interface_deactivate:
         script:
-          - ["ip", "-${proto}", "route", "del", "${bridge_peer_cidr}", "dev", "${tunnel_interface}"]
+          - ["/bin/sh", "-c", "for cidr in ${bridge_peer_cidrs_ipv4}; do ip -4 route del $cidr dev ${tunnel_interface}; done"]
 
 metrics:
   listen_addr: 0.0.0.0:8000
