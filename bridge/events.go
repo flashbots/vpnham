@@ -131,7 +131,7 @@ func (s *Server) detectTunnelUpDownEvents(e event.TunnelInterfaceEvent, updateMo
 			ifs.UpSince = e.EvtTimestamp()
 			s.events <- &event.TunnelInterfaceWentDown{ // emit event
 				BridgeInterface: s.cfg.BridgeInterface,
-				BridgePeerCIDR:  s.cfg.PeerCIDR,
+				BridgePeerCIDRs: s.cfg.BridgePeerCIDRs(),
 				TunnelInterface: e.EvtTunnelInterface(),
 				Timestamp:       e.EvtTimestamp(),
 			}
@@ -143,7 +143,7 @@ func (s *Server) detectTunnelUpDownEvents(e event.TunnelInterfaceEvent, updateMo
 			ifs.UpSince = e.EvtTimestamp()
 			s.events <- &event.TunnelInterfaceWentUp{ // emit event
 				BridgeInterface: s.cfg.BridgeInterface,
-				BridgePeerCIDR:  s.cfg.PeerCIDR,
+				BridgePeerCIDRs: s.cfg.BridgePeerCIDRs(),
 				TunnelInterface: e.EvtTunnelInterface(),
 				Timestamp:       e.EvtTimestamp(),
 			}
@@ -174,7 +174,7 @@ func (s *Server) deriveBridgeEvents(e event.TunnelInterfaceEvent) {
 	} else {
 		s.events <- &event.BridgeWentDown{ // emit event
 			BridgeInterface: s.cfg.BridgeInterface,
-			BridgePeerCIDR:  s.cfg.PeerCIDR,
+			BridgePeerCIDRs: s.cfg.BridgePeerCIDRs(),
 			Timestamp:       e.EvtTimestamp(),
 		}
 	}

@@ -8,6 +8,7 @@ import (
 	gcepb "cloud.google.com/go/compute/apiv1/computepb"
 	gcpcli "github.com/flashbots/vpnham/gcp"
 	"github.com/flashbots/vpnham/metrics"
+	"github.com/flashbots/vpnham/types"
 	"github.com/flashbots/vpnham/utils"
 	"go.opentelemetry.io/otel/attribute"
 	otelapi "go.opentelemetry.io/otel/metric"
@@ -21,7 +22,7 @@ type UpdateGCPRoute struct {
 	Name        string
 	Description string
 
-	DestRange       string
+	DestRanges      []types.CIDR
 	Network         string
 	NextHopInstance string
 	Priority        uint32
@@ -33,6 +34,27 @@ func (j *UpdateGCPRoute) GetJobName() string {
 }
 
 func (j *UpdateGCPRoute) Execute(ctx context.Context) error {
+	errs := make([]error, 0)
+	for _, destRange := range j.DestRanges {
+		if err := j.updateRoute(ctx, destRange.String()); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	switch len(errs) {
+	default:
+		return errors.Join(errs...)
+	case 1:
+		return errs[0]
+	case 0:
+		return nil
+	}
+}
+
+func (j *UpdateGCPRoute) updateRoute(
+	ctx context.Context,
+	destRange string,
+) error {
 	gcp, err := gcpcli.NewClient(ctx)
 	if err != nil {
 		return err
@@ -40,7 +62,7 @@ func (j *UpdateGCPRoute) Execute(ctx context.Context) error {
 
 	var routes []*gcepb.Route
 	err = utils.WithTimeout(ctx, j.Timeout, func(ctx context.Context) (err error) {
-		routes, err = gcp.FindRoute(ctx, j.Network, j.DestRange)
+		routes, err = gcp.FindRoute(ctx, j.Network, destRange)
 		return err
 	})
 	if err != nil {
@@ -54,7 +76,7 @@ func (j *UpdateGCPRoute) Execute(ctx context.Context) error {
 	case 0:
 		// no route yet
 		return utils.WithTimeout(ctx, j.Timeout, func(ctx context.Context) error {
-			return gcp.CreateRoute(ctx, j.route())
+			return gcp.CreateRoute(ctx, j.gceRoute(destRange))
 		})
 
 	case 1:
@@ -71,7 +93,7 @@ func (j *UpdateGCPRoute) Execute(ctx context.Context) error {
 			return err
 		}
 		return utils.WithTimeout(ctx, j.Timeout, func(ctx context.Context) error {
-			return gcp.CreateRoute(ctx, j.route())
+			return gcp.CreateRoute(ctx, j.gceRoute(destRange))
 		})
 
 	default:
@@ -104,7 +126,7 @@ func (j *UpdateGCPRoute) Execute(ctx context.Context) error {
 		// if the match not found, create a new one
 		if !foundMatch {
 			err := utils.WithTimeout(ctx, j.Timeout, func(ctx context.Context) error {
-				return gcp.CreateRoute(ctx, j.route())
+				return gcp.CreateRoute(ctx, j.gceRoute(destRange))
 			})
 			if err != nil {
 				errs = append(errs, err)
@@ -128,12 +150,12 @@ func (j *UpdateGCPRoute) Execute(ctx context.Context) error {
 	}
 }
 
-func (j *UpdateGCPRoute) route() *gcepb.Route {
+func (j *UpdateGCPRoute) gceRoute(destRange string) *gcepb.Route {
 	return &gcepb.Route{
 		Name:        proto.String(j.Name),
 		Description: proto.String(j.Description),
 
-		DestRange:       proto.String(j.DestRange),
+		DestRange:       proto.String(destRange),
 		Network:         proto.String(j.Network),
 		NextHopInstance: proto.String(j.NextHopInstance),
 		Priority:        proto.Uint32(j.Priority),

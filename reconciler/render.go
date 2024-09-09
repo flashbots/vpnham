@@ -11,9 +11,10 @@ import (
 const (
 	placeholderProto = "proto"
 
-	placeholderBridgeInterface   = "bridge_interface"
-	placeholderBridgeInterfaceIP = "bridge_interface_ip"
-	placeholderBridgePeerCIDR    = "bridge_peer_cidr"
+	placeholderBridgeInterface      = "bridge_interface"
+	placeholderBridgeInterfaceIP    = "bridge_interface_ip"
+	placeholderBridgePeerCIDR       = "bridge_peer_cidr"
+	placeholderBridgeExtraPeerCIDRs = "bridge_extra_peer_cidrs"
 
 	placeholderTunnelInterface      = "tunnel_interface"
 	placeholderTunnelInterfaceIP    = "tunnel_interface_ip"
@@ -26,27 +27,41 @@ func (r *Reconciler) renderPlaceholders(e event.Event) (map[string]string, error
 
 	if e, ok := e.(event.BridgeEvent); ok {
 		placeholders[placeholderBridgeInterface] = e.EvtBridgeInterface()
-		placeholders[placeholderBridgePeerCIDR] = e.EvtBridgePeerCIDR().String()
 
-		ipv4 := e.EvtBridgePeerCIDR().IsIPv4()
-		if ipv4 {
-			placeholders[placeholderProto] = "4"
-		} else {
-			placeholders[placeholderProto] = "6"
-		}
+		cidrs := e.EvtBridgePeerCIDRs()
+		if len(cidrs) > 0 {
+			bridgePeerCIDR := cidrs[0]
+			placeholders[placeholderBridgePeerCIDR] = bridgePeerCIDR.String()
 
-		placeholders[placeholderBridgeInterfaceIP], err = utils.GetInterfaceIP(e.EvtBridgeInterface(), ipv4)
-		if err != nil {
-			return nil, err
-		}
+			ipv4 := bridgePeerCIDR.IsIPv4()
+			if ipv4 {
+				placeholders[placeholderProto] = "4"
+			} else {
+				placeholders[placeholderProto] = "6"
+			}
 
-		if e, ok := e.(event.TunnelInterfaceEvent); ok {
-			placeholders[placeholderTunnelInterface] = e.EvtTunnelInterface()
-
-			placeholders[placeholderTunnelInterfaceIP], err = utils.GetInterfaceIP(e.EvtTunnelInterface(), ipv4)
+			placeholders[placeholderBridgeInterfaceIP], err = utils.GetInterfaceIP(e.EvtBridgeInterface(), ipv4)
 			if err != nil {
 				return nil, err
 			}
+
+			if e, ok := e.(event.TunnelInterfaceEvent); ok {
+				placeholders[placeholderTunnelInterface] = e.EvtTunnelInterface()
+
+				placeholders[placeholderTunnelInterfaceIP], err = utils.GetInterfaceIP(e.EvtTunnelInterface(), ipv4)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+
+		if len(cidrs) > 1 {
+			extraPeerCIDRs := make([]string, 0, len(cidrs)-1)
+			for idx := 1; idx < len(cidrs); idx++ {
+				extraPeerCIDRs = append(extraPeerCIDRs, cidrs[idx].String())
+			}
+
+			placeholders[placeholderBridgeExtraPeerCIDRs] = strings.Join(extraPeerCIDRs, ",")
 		}
 	}
 

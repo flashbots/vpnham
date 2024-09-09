@@ -25,7 +25,7 @@ func (s *Server) eventBridgeWentDown(ctx context.Context, e *event.BridgeWentDow
 		s.status.ActiveSince = e.Timestamp
 		s.events <- &event.BridgeDeactivated{ // emit event
 			BridgeInterface: s.cfg.BridgeInterface,
-			BridgePeerCIDR:  s.cfg.PeerCIDR,
+			BridgePeerCIDRs: s.cfg.BridgePeerCIDRs(),
 			Timestamp:       e.Timestamp,
 		}
 	}
@@ -54,7 +54,7 @@ func (s *Server) eventBridgeWentUp(ctx context.Context, e *event.BridgeWentUp, _
 			s.status.ActiveSince = e.Timestamp
 			s.events <- &event.BridgeActivated{ // emit event
 				BridgeInterface: s.cfg.BridgeInterface,
-				BridgePeerCIDR:  s.cfg.PeerCIDR,
+				BridgePeerCIDRs: s.cfg.BridgePeerCIDRs(),
 				Timestamp:       e.Timestamp,
 			}
 
@@ -64,7 +64,7 @@ func (s *Server) eventBridgeWentUp(ctx context.Context, e *event.BridgeWentUp, _
 				s.status.ActiveSince = e.Timestamp
 				s.events <- &event.BridgeActivated{ // emit event
 					BridgeInterface: s.cfg.BridgeInterface,
-					BridgePeerCIDR:  s.cfg.PeerCIDR,
+					BridgePeerCIDRs: s.cfg.BridgePeerCIDRs(),
 					Timestamp:       e.Timestamp,
 				}
 			}

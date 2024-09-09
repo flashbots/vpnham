@@ -14,7 +14,7 @@ func (s *Server) reapplyUpdates(_ context.Context, _ chan<- error) {
 
 			s.events <- &event.BridgeReactivated{ // emit event
 				BridgeInterface: s.cfg.BridgeInterface,
-				BridgePeerCIDR:  s.cfg.PeerCIDR,
+				BridgePeerCIDRs: s.cfg.BridgePeerCIDRs(),
 				Iteration:       ba.Count,
 				Timestamp:       time.Now(),
 			}
@@ -31,7 +31,7 @@ func (s *Server) reapplyUpdates(_ context.Context, _ chan<- error) {
 			if activeInterface := s.status.ActiveInterface(); activeInterface != "" {
 				s.events <- &event.TunnelInterfaceReactivated{ // emit event
 					BridgeInterface: s.cfg.BridgeInterface,
-					BridgePeerCIDR:  s.cfg.PeerCIDR,
+					BridgePeerCIDRs: s.cfg.BridgePeerCIDRs(),
 					Iteration:       ia.Count,
 					TunnelInterface: activeInterface,
 					Timestamp:       time.Now(),

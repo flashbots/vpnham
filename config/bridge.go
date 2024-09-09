@@ -19,8 +19,9 @@ type Bridge struct {
 
 	Role types.Role `yaml:"role"`
 
-	BridgeInterface string     `yaml:"bridge_interface"`
-	PeerCIDR        types.CIDR `yaml:"peer_cidr"`
+	BridgeInterface string       `yaml:"bridge_interface"`
+	PeerCIDR        types.CIDR   `yaml:"peer_cidr"`
+	ExtraPeerCIDRs  []types.CIDR `yaml:"extra_peer_cidrs"`
 
 	SecondaryInterfaces []string `yaml:"secondary_interfaces"`
 
@@ -44,6 +45,7 @@ var (
 	errBridgePartnerStatusThresholdsAreInvalid    = errors.New("bridge partner status thresholds are invalid")
 	errBridgePartnerStatusURLIsInvalid            = errors.New("bridge partner status url is invalid")
 	errBridgePeerCIDRIsInvalid                    = errors.New("bridge peer cidr is invalid")
+	errBridgeExtraPeerCIDRIsInvalid               = errors.New("bridge extra peer cidr is invalid")
 	errBridgeReconcileConfigurationIsInvalid      = errors.New("bridge reconcile configuration is invalid")
 	errBridgeRoleIsInvalid                        = errors.New("bridge role is invalid")
 	errBridgeStatusAddrIsInvalid                  = errors.New("bridge status addr is invalid")
@@ -117,6 +119,16 @@ func (b *Bridge) Validate(ctx context.Context) error {
 		}
 	}
 
+	{ // extra_peer_cidrs
+		for _, cidr := range b.ExtraPeerCIDRs {
+			if err := cidr.Validate(); err != nil {
+				return fmt.Errorf("%w: %w",
+					errBridgeExtraPeerCIDRIsInvalid, err,
+				)
+			}
+		}
+	}
+
 	{ // status_addr
 		if err := b.StatusAddr.Validate(); err != nil {
 			return fmt.Errorf("%w: %w",
@@ -184,4 +196,11 @@ func (b *Bridge) Validate(ctx context.Context) error {
 
 func (b *Bridge) TunnelInterfacesCount() int {
 	return len(b.TunnelInterfaces)
+}
+
+func (b *Bridge) BridgePeerCIDRs() []types.CIDR {
+	cidrs := make([]types.CIDR, 0, 1+len(b.ExtraPeerCIDRs))
+	cidrs = append(cidrs, b.PeerCIDR)
+	cidrs = append(cidrs, b.ExtraPeerCIDRs...)
+	return cidrs
 }

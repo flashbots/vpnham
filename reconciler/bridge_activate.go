@@ -52,9 +52,9 @@ func (r *Reconciler) bridgeActivateUpdateAWS(
 			JobName: "aws_update_route_tables",
 			Timeout: aws.Timeout,
 
-			CIDR:               e.EvtBridgePeerCIDR().String(),
-			NetworkInterfaceID: vpc.NetworkInterfaceID,
-			RouteTables:        vpc.RouteTables,
+			DestinationCidrBlocks: e.EvtBridgePeerCIDRs(),
+			NetworkInterfaceID:    vpc.NetworkInterfaceID,
+			RouteTables:           vpc.RouteTables,
 		})
 	}
 }
@@ -72,8 +72,6 @@ func (r *Reconciler) bridgeActivateUpdateGCP(
 	gcp := r.cfg.BridgeActivate.GCP
 
 	for id, vpc := range gcp.Vpcs {
-		cidr := e.EvtBridgePeerCIDR().String()
-
 		parts := strings.Split(id, "/")
 		name := gcp.RouteIDPrefix + "-" + parts[len(parts)-1]
 
@@ -86,7 +84,7 @@ func (r *Reconciler) bridgeActivateUpdateGCP(
 			Name:        name,
 			Description: description,
 
-			DestRange:       cidr,
+			DestRanges:      e.EvtBridgePeerCIDRs(),
 			Network:         vpc.ID,
 			NextHopInstance: gcp.InstanceName,
 			Priority:        gcp.RoutePriority,

@@ -76,7 +76,7 @@ func (s *Server) eventPartnerWentDown(ctx context.Context, e *event.PartnerWentD
 		s.status.ActiveSince = e.Timestamp
 		s.events <- &event.BridgeActivated{ // emit event
 			BridgeInterface: s.cfg.BridgeInterface,
-			BridgePeerCIDR:  s.cfg.PeerCIDR,
+			BridgePeerCIDRs: s.cfg.BridgePeerCIDRs(),
 			Timestamp:       e.Timestamp,
 		}
 	}

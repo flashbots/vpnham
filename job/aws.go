@@ -9,6 +9,7 @@ import (
 	awstypes "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	awscli "github.com/flashbots/vpnham/aws"
 	"github.com/flashbots/vpnham/metrics"
+	"github.com/flashbots/vpnham/types"
 	"github.com/flashbots/vpnham/utils"
 	"go.opentelemetry.io/otel/attribute"
 	otelapi "go.opentelemetry.io/otel/metric"
@@ -20,9 +21,9 @@ type UpdateAWSRouteTables struct {
 	JobName string
 	Timeout time.Duration
 
-	CIDR               string
-	NetworkInterfaceID string
-	RouteTables        []string
+	DestinationCidrBlocks []types.CIDR
+	NetworkInterfaceID    string
+	RouteTables           []string
 }
 
 func (j *UpdateAWSRouteTables) GetJobName() string {
@@ -37,13 +38,15 @@ func (j *UpdateAWSRouteTables) Execute(ctx context.Context) error {
 	j.aws = aws
 
 	errs := []error{}
-	for _, rt := range j.RouteTables {
-		err := j.updateRouteTable(ctx, rt, j.CIDR, j.NetworkInterfaceID)
-		if err != nil {
-			metrics.Errors.Add(ctx, 1, otelapi.WithAttributes(
-				attribute.String(metrics.LabelErrorScope, "job_"+j.JobName),
-			))
-			errs = append(errs, err)
+	for _, destinationCidrBlock := range j.DestinationCidrBlocks {
+		for _, rt := range j.RouteTables {
+			err := j.updateRouteTable(ctx, rt, destinationCidrBlock.String(), j.NetworkInterfaceID)
+			if err != nil {
+				metrics.Errors.Add(ctx, 1, otelapi.WithAttributes(
+					attribute.String(metrics.LabelErrorScope, "job_"+j.JobName),
+				))
+				errs = append(errs, err)
+			}
 		}
 	}
 

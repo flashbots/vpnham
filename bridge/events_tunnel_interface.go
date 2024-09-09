@@ -35,7 +35,7 @@ func (s *Server) eventTunnelInterfaceWentDown(ctx context.Context, e *event.Tunn
 	ifs.ActiveSince = e.Timestamp
 	s.events <- &event.TunnelInterfaceDeactivated{ // emit event
 		BridgeInterface: s.cfg.BridgeInterface,
-		BridgePeerCIDR:  s.cfg.PeerCIDR,
+		BridgePeerCIDRs: s.cfg.BridgePeerCIDRs(),
 		TunnelInterface: e.EvtTunnelInterface(),
 		Timestamp:       e.Timestamp,
 	}
@@ -50,7 +50,7 @@ func (s *Server) eventTunnelInterfaceWentDown(ctx context.Context, e *event.Tunn
 		promotedIfs.ActiveSince = e.Timestamp
 		s.events <- &event.TunnelInterfaceActivated{ // emit event
 			BridgeInterface: s.cfg.BridgeInterface,
-			BridgePeerCIDR:  s.cfg.PeerCIDR,
+			BridgePeerCIDRs: s.cfg.BridgePeerCIDRs(),
 			TunnelInterface: promotedIfsName,
 			Timestamp:       e.Timestamp,
 		}
@@ -92,7 +92,7 @@ func (s *Server) eventTunnelInterfaceWentUp(ctx context.Context, e *event.Tunnel
 				demotedIfs.ActiveSince = e.Timestamp
 				s.events <- &event.TunnelInterfaceDeactivated{ // emit event
 					BridgeInterface: s.cfg.BridgeInterface,
-					BridgePeerCIDR:  s.cfg.PeerCIDR,
+					BridgePeerCIDRs: s.cfg.BridgePeerCIDRs(),
 					TunnelInterface: demotedIfsName,
 					Timestamp:       e.Timestamp,
 				}
@@ -104,7 +104,7 @@ func (s *Server) eventTunnelInterfaceWentUp(ctx context.Context, e *event.Tunnel
 			ifs.ActiveSince = e.Timestamp
 			s.events <- &event.TunnelInterfaceActivated{ // emit event
 				BridgeInterface: s.cfg.BridgeInterface,
-				BridgePeerCIDR:  s.cfg.PeerCIDR,
+				BridgePeerCIDRs: s.cfg.BridgePeerCIDRs(),
 				TunnelInterface: e.EvtTunnelInterface(),
 				Timestamp:       e.Timestamp,
 			}
@@ -127,7 +127,7 @@ func (s *Server) eventTunnelInterfaceWentUp(ctx context.Context, e *event.Tunnel
 			ifs.ActiveSince = e.Timestamp
 			s.events <- &event.TunnelInterfaceActivated{ // emit event
 				BridgeInterface: s.cfg.BridgeInterface,
-				BridgePeerCIDR:  s.cfg.PeerCIDR,
+				BridgePeerCIDRs: s.cfg.BridgePeerCIDRs(),
 				TunnelInterface: e.EvtTunnelInterface(),
 				Timestamp:       e.Timestamp,
 			}

@@ -8,7 +8,7 @@ import (
 
 type TunnelInterfaceReactivated struct {
 	BridgeInterface string
-	BridgePeerCIDR  types.CIDR
+	BridgePeerCIDRs []types.CIDR
 	Iteration       int
 	TunnelInterface string
 	Timestamp       time.Time
@@ -22,8 +22,8 @@ func (e *TunnelInterfaceReactivated) EvtBridgeInterface() string {
 	return e.BridgeInterface
 }
 
-func (e *TunnelInterfaceReactivated) EvtBridgePeerCIDR() types.CIDR {
-	return e.BridgePeerCIDR
+func (e *TunnelInterfaceReactivated) EvtBridgePeerCIDRs() []types.CIDR {
+	return e.BridgePeerCIDRs
 }
 
 func (e *TunnelInterfaceReactivated) EvtTunnelInterface() string {
