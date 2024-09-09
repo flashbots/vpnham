@@ -84,9 +84,9 @@ func (s *Server) eventBridgeDeactivated(ctx context.Context, _ *event.BridgeDeac
 	l.Info("Bridge deactivated")
 
 	if r := s.cfg.Reconcile.BridgeActivate.Reapply; r.Enabled() {
-		ba := s.reapply.bridgeActivate
-		ba.Count = 0
-		ba.Next = time.Time{} // disable re-activations of an inactive bridge
+		reapply := s.reapply.bridgeActivate
+		reapply.Count = 0
+		reapply.Next = time.Time{} // disable re-activations of an inactive bridge
 	}
 }
 
@@ -98,14 +98,22 @@ func (s *Server) eventBridgeActivated(ctx context.Context, e *event.BridgeActiva
 	s.reconciler.BridgeActivate(ctx, e, failureSink)
 
 	if r := s.cfg.Reconcile.BridgeActivate.Reapply; r.Enabled() {
-		ba := s.reapply.bridgeActivate
-		ba.Count = 0
-		ba.Next = e.Timestamp.Add(r.InitialDelay)
+		reapply := s.reapply.bridgeActivate
+		reapply.Count = 0
+		reapply.Next = e.Timestamp.Add(r.InitialDelay)
 	}
 }
 
 func (s *Server) eventBridgeReactivated(ctx context.Context, e *event.BridgeReactivated, failureSink chan<- error) {
 	l := logutils.LoggerFromContext(ctx)
+
+	s.mxStatus.Lock()
+	if !s.status.Active {
+		l.Info("Skipping bridge reactivation since it's already inactive by now")
+		s.mxStatus.Unlock()
+		return
+	}
+	defer s.mxStatus.Unlock()
 
 	l.Info("Bridge reactivating...",
 		zap.Int("iteration", e.Iteration),
@@ -114,8 +122,8 @@ func (s *Server) eventBridgeReactivated(ctx context.Context, e *event.BridgeReac
 	s.reconciler.BridgeActivate(ctx, e, failureSink)
 
 	if r := s.cfg.Reconcile.BridgeActivate.Reapply; r.Enabled() {
-		ba := s.reapply.bridgeActivate
-		ba.Count++
-		ba.Next = e.Timestamp.Add(r.DelayOnIteration(ba.Count))
+		reapply := s.reapply.bridgeActivate
+		reapply.Count++
+		reapply.Next = e.Timestamp.Add(r.DelayOnIteration(reapply.Count))
 	}
 }

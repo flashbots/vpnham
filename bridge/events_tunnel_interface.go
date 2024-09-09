@@ -151,9 +151,9 @@ func (s *Server) eventTunnelInterfaceActivated(ctx context.Context, e *event.Tun
 	s.reconciler.InterfaceActivate(ctx, e, failureSink)
 
 	if r := s.cfg.Reconcile.InterfaceActivate.Reapply; r.Enabled() {
-		ia := s.reapply.interfaceActivate
-		ia.Count = 0
-		ia.Next = e.Timestamp.Add(r.InitialDelay)
+		reapply := s.reapply.interfaceActivate
+		reapply.Count = 0
+		reapply.Next = e.Timestamp.Add(r.InitialDelay)
 	}
 }
 
@@ -167,8 +167,8 @@ func (s *Server) eventTunnelInterfaceReactivated(ctx context.Context, e *event.T
 	s.reconciler.InterfaceActivate(ctx, e, failureSink)
 
 	if r := s.cfg.Reconcile.InterfaceActivate.Reapply; r.Enabled() {
-		ia := s.reapply.interfaceActivate
-		ia.Count++
-		ia.Next = e.Timestamp.Add(r.DelayOnIteration(ia.Count))
+		reapply := s.reapply.interfaceActivate
+		reapply.Count++
+		reapply.Next = e.Timestamp.Add(r.DelayOnIteration(reapply.Count))
 	}
 }
