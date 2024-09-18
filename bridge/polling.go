@@ -35,7 +35,7 @@ func (s *Server) pollPartnerBridge(ctx context.Context, _ chan<- error) {
 
 	res, err := s.http.Do(req)
 	if err != nil {
-		l.Debug("Failed to query partner bridge status",
+		l.Warn("Failed to query partner bridge status",
 			zap.Error(err),
 		)
 		s.events <- &event.PartnerPollFailure{ // emit event

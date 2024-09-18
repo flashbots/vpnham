@@ -27,6 +27,7 @@ type Bridge struct {
 
 	StatusAddr                 types.Address `yaml:"status_addr"`
 	PartnerURL                 string        `yaml:"partner_url"`
+	PartnerPollingInterface    string        `yaml:"partner_polling_interface"`
 	PartnerStatusTimeout       time.Duration `yaml:"partner_status_timeout"`
 	PartnerStatusThresholdDown int           `yaml:"partner_status_threshold_down"`
 	PartnerStatusThresholdUp   int           `yaml:"partner_status_threshold_up"`
@@ -41,11 +42,12 @@ type Bridge struct {
 
 var (
 	errBridgeActiveTunnelInterfacesCountIsInvalid = errors.New("bridge has invalid count of active interfaces configured (must be only 1)")
+	errBridgeExtraPeerCIDRIsInvalid               = errors.New("bridge extra peer cidr is invalid")
 	errBridgeInterfaceIsInvalid                   = errors.New("bridge interface is invalid")
+	errBridgePartnerPollingInterfaceIsInvalid     = errors.New("bridge polling interface is invalid")
 	errBridgePartnerStatusThresholdsAreInvalid    = errors.New("bridge partner status thresholds are invalid")
 	errBridgePartnerStatusURLIsInvalid            = errors.New("bridge partner status url is invalid")
 	errBridgePeerCIDRIsInvalid                    = errors.New("bridge peer cidr is invalid")
-	errBridgeExtraPeerCIDRIsInvalid               = errors.New("bridge extra peer cidr is invalid")
 	errBridgeReconcileConfigurationIsInvalid      = errors.New("bridge reconcile configuration is invalid")
 	errBridgeRoleIsInvalid                        = errors.New("bridge role is invalid")
 	errBridgeStatusAddrIsInvalid                  = errors.New("bridge status addr is invalid")
@@ -142,6 +144,16 @@ func (b *Bridge) Validate(ctx context.Context) error {
 			return fmt.Errorf("%w: %w",
 				errBridgePartnerStatusURLIsInvalid, err,
 			)
+		}
+	}
+
+	{ // partner_polling_interface
+		if b.PartnerPollingInterface != "" {
+			if _, _, err := utils.GetInterfaceIPs(b.PartnerPollingInterface); err != nil {
+				return fmt.Errorf("%w: %w",
+					errBridgePartnerPollingInterfaceIsInvalid, err,
+				)
+			}
 		}
 	}
 

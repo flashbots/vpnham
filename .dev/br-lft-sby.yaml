@@ -7,6 +7,7 @@ bridges:
 
     status_addr: 10.0.0.3:8080
     partner_url: http://10.0.0.2:8080/
+    partner_polling_interface: eth0
 
     probe_interval: 1s
     probe_location: left/standby

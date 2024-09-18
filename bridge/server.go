@@ -17,6 +17,7 @@ import (
 	"github.com/flashbots/vpnham/reconciler"
 	"github.com/flashbots/vpnham/transponder"
 	"github.com/flashbots/vpnham/types"
+	"github.com/flashbots/vpnham/utils"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -76,6 +77,17 @@ func NewServer(ctx context.Context, cfg *config.Bridge) (*Server, error) {
 	dialer := &net.Dialer{
 		Timeout:   cfg.PartnerStatusTimeout,
 		KeepAlive: 2 * cfg.PartnerStatusTimeout,
+	}
+	if cfg.PartnerPollingInterface != "" {
+		ipv4s, ipv6s, err := utils.GetInterfaceIPs(cfg.PartnerPollingInterface)
+		if err != nil {
+			return nil, err
+		}
+		if len(ipv4s) > 0 {
+			dialer.LocalAddr = &net.TCPAddr{IP: net.ParseIP(ipv4s[0])}
+		} else if len(ipv6s) > 0 {
+			dialer.LocalAddr = &net.TCPAddr{IP: net.ParseIP(ipv6s[0])}
+		}
 	}
 	transport := &http.Transport{
 		DialContext:     dialer.DialContext,
