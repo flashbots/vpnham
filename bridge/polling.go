@@ -33,11 +33,7 @@ func (s *Server) pollPartnerBridge(ctx context.Context, _ chan<- error) {
 		Header: map[string][]string{"accept": {"application/json"}},
 	}
 
-	cli := &http.Client{
-		Timeout: s.cfg.PartnerStatusTimeout,
-	}
-
-	res, err := cli.Do(req)
+	res, err := s.http.Do(req)
 	if err != nil {
 		l.Debug("Failed to query partner bridge status",
 			zap.Error(err),

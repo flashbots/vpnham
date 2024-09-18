@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -29,6 +30,7 @@ type Server struct {
 	server     *http.Server
 	ticker     *time.Ticker
 
+	http           *http.Client
 	partner        *types.Partner
 	partnerMonitor *monitor.Monitor
 
@@ -71,12 +73,32 @@ func NewServer(ctx context.Context, cfg *config.Bridge) (*Server, error) {
 		return nil, err
 	}
 
+	dialer := &net.Dialer{
+		Timeout:   cfg.PartnerStatusTimeout,
+		KeepAlive: 2 * cfg.PartnerStatusTimeout,
+	}
+	transport := &http.Transport{
+		DialContext:     dialer.DialContext,
+		IdleConnTimeout: 4 * cfg.PartnerStatusTimeout,
+		MaxIdleConns:    2,
+	}
+	cli := &http.Client{
+		Transport: transport,
+		Timeout:   cfg.PartnerStatusTimeout,
+	}
+
 	partner, err := types.NewPartner(cfg.PartnerURL)
 	if err != nil {
 		return nil, err
 	}
 
-	partnerMonitor, err := monitor.New(cfg.PartnerStatusThresholdDown, cfg.PartnerStatusThresholdUp)
+	partnerMonitor, err := func() (*monitor.Monitor, error) {
+		if cfg.Role == types.RoleActive {
+			return monitor.New(cfg.PartnerStatusThresholdDown, cfg.PartnerStatusThresholdUp)
+		} else {
+			return monitor.New(cfg.PartnerStatusThresholdDown+1, cfg.PartnerStatusThresholdUp+1)
+		}
+	}()
 	if err != nil {
 		return nil, err
 	}
@@ -89,6 +111,7 @@ func NewServer(ctx context.Context, cfg *config.Bridge) (*Server, error) {
 		reconciler: reconciler,
 		ticker:     time.NewTicker(cfg.ProbeInterval),
 
+		http:           cli,
 		partner:        partner,
 		partnerMonitor: partnerMonitor,
 
